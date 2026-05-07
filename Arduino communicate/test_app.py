@@ -4,6 +4,7 @@ import time
 
 app = Flask(__name__)
 
+
 class KeezenHardware:
     def __init__(self):
         print("--- Keezen Hardware opstarten ---")
