@@ -20,4 +20,4 @@ class Board:
             self.spaces.append(Space(number + 65, self.players[(number // 4) % len(self.players)]))
     
     def detectPlayers(self):
-        self.players.append(Player()) #ToDo: append active players
+        self.players.append(Player("player1", 1)) #ToDo: append active players
