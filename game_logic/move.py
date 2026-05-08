@@ -51,11 +51,11 @@ def checkMove(board, pawn, steps):
     stepsTaken = 0
     for step in range(steps):
         if endZone:
-            if pawn.endZoneStart + stepsTaken >= len(board.spaces):
+            if pawn.endZoneStart + stepsTaken >= len(board.spaces) or step - stepsTaken > 4:
                 return False
             space = board.spaces[pawn.endZoneStart + stepsTaken]
         else:
-            space = board.spaces[pawn.position + step]
+            space = board.spaces[(pawn.position + step) % 64]
         if space.number == pawn.startSpace - 1 or (space.number == 64 and pawn.owner == 0):
             endZone = True
             stepsTaken = step
