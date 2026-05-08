@@ -4,20 +4,25 @@ from deck import Deck
 
 class Board:
     spaces = []
-    players = []
 
-    def __init__(self):
+    def __init__(self, players):
+        self.players = players
         self.fillSpaces()
-        self.detectPlayers
     
     def fillSpaces(self):
         for number in range(64):
-            if number % 16 == 0:
-                self.spaces.append(Space(number + 1, self.players[number // 16]))
+            if number % 17 == 0:
+                self.spaces.append(Space(number + 1, self.players[number // 17]))
             else:
                 self.spaces.append(Space(number + 1))
         for number in range(32):
             self.spaces.append(Space(number + 65, self.players[(number // 4) % len(self.players)]))
+
+    def update(self, pawn, steps, switch = False):
+        self.spaces[pawn.position].occupiedBy = None
+        currentPawn = self.spaces[pawn.position + steps].occupiedBy
+        if currentPawn and not switch:
+            currentPawn.position = currentPawn.basePosition
+            currentPawn.inPlay = False
+        self.spaces[pawn.position + steps].occupiedBy = pawn
     
-    def detectPlayers(self):
-        self.players.append(Player("player1", 1)) #ToDo: append active players
