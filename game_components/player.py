@@ -4,5 +4,5 @@ class Player:
     def __init__(self, name, player_id):
         self.name = name
         self.id = player_id
-        self.pawns = [Pawn(player_id) for _ in range(4)]
+        self.pawns = [Pawn(player_id, i) for i in range(4)]
         self.cards = []
