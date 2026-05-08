@@ -9,12 +9,12 @@ class Deck:
         self.players = players
         self.shuffle()
     
-    def schuffle(self):
+    def shuffle(self):
         self.addCards()
         random.shuffle(self.cards)
     
     def addCards(self):
-        for face in ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10' 'J', 'Q', 'K']:
+        for face in ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K']:
             for _ in self.players:
                 self.cards.append(Card(face))
         self.max_cards = len(self.cards)
