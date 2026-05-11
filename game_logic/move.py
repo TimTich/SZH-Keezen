@@ -39,7 +39,7 @@ def switch(board, pawn, pawn2):
 
 def enterPlay(board, pawn):
     pawn.position = pawn.startSpace
-    if checkMove(pawn, 0):
+    if checkMove(board, pawn, 0):
         board.update(pawn, 0)
         pawn.inPlay = True
         return True
