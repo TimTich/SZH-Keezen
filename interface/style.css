@@ -1,0 +1,411 @@
+/* Reset */
+* {
+    box-sizing: border-box;
+}
+
+body {
+    background-color: #35654d;
+    background-image: radial-gradient(circle, #4a8064 0%, #35654d 100%);
+    margin: 0;
+    height: 100vh;
+    width: 100vw;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: 'Arial Black', Gadget, sans-serif;
+    overflow: hidden;
+}
+
+.container {
+    text-align: center;
+    z-index: 20;
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+.verborgen {
+    display: none !important;
+}
+
+/* --- PIONNEN --- */
+.pion {
+    position: absolute;
+    width: 160px; 
+    height: 160px;
+    z-index: 10;
+    background-image: url('pion.png'); 
+    background-color: #d3d3d3; 
+    border: 4px solid #808080; 
+    border-radius: 15px; 
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-origin: content-box; 
+    box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.pion:hover {
+    filter: brightness(80%);
+    transform: scale(1.05);
+}
+
+.pion.geselecteerd {
+    background-color: #d1f7d1;
+    border: 4px solid #4caf50;
+    box-shadow: 0 0 25px rgba(76, 175, 80, 0.6);
+}
+
+.pion-links-boven { top: 30px; left: 30px; }
+.pion-rechts-boven { top: 30px; right: 30px;  }
+.pion-links-onder { bottom: 30px; left: 30px; }
+.pion-rechts-onder { bottom: 30px; right: 30px; }
+
+/* --- TITELS --- */
+.spel-titel {
+    font-size: 6rem;
+    color: #ffffff;
+    text-transform: uppercase;
+    margin-top: 10vh;
+    text-shadow: 2px 2px 0px #000, 4px 4px 20px rgba(0,0,0,0.6);
+}
+
+.spel-titel-klein {
+    font-size: 2.5rem;
+    color: #ffffff;
+    padding-top: 5vh;
+}
+
+/* --- DE KAARTEN BALK --- */
+.hand-kaarten-balk {
+    display: block;
+    white-space: nowrap;
+    position: absolute;
+    top: 35%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    padding: 20px;
+    background-color: hwb(0 3% 41%);
+    border-radius: 20px;
+    border: 4px solid #222;
+    width: fit-content;
+    max-width: 95vw;
+    z-index: 30;
+}
+
+.speelkaart-wrapper {
+    display: inline-block;
+    width: 140px;
+    height: 200px;
+    margin: 0 10px;
+    background-color: white;
+    border: 4px solid black;
+    border-radius: 10px;
+    vertical-align: middle;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.2s ease;
+    font-family: 'Arial Black', sans-serif;
+}
+
+.speelkaart-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    transform: scale(1.1);
+    transition: filter 0.2s ease;
+    
+}
+
+.speelkaart-wrapper:hover .speelkaart-img {
+    filter: brightness(60%);
+}
+
+.speelkaart-wrapper.geselecteerd {
+    background-color: #d1f7d1;
+    border: 4px solid #4caf50;
+    transform: translateY(-10px);
+}
+
+/* --- KNOPPEN (Algemeen) --- */
+.speel-knop {
+    padding: 30px 80px;
+    font-size: 2.5rem;
+    font-family: 'Arial Black', sans-serif;
+    color: white;
+    background: linear-gradient(to bottom, #f60a0a, #8b0000);
+    border: 5px solid rgb(0, 0, 0);
+    border-radius: 50px;
+    cursor: pointer;
+}
+
+.stop-knop {
+    position: absolute;
+    bottom: 10vh;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 15px 40px;
+    background: #444;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+}
+
+/* --- HOOFD ACTIE KNOP (Onder de kaarten) --- */
+.actie-knop {
+    position: absolute;
+    top: 65%;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 20px 60px;
+    color: white;
+    border-radius: 40px;
+    border: 4px solid #080000;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+    z-index: 40;
+    font-size: 2.5rem;
+    font-family: 'Arial Black', sans-serif;
+}
+
+.actie-knop.uitgeschakeld {
+    background: #333;
+    border-color: #555;
+    color: #777;
+    cursor: default;
+    opacity: 0.8;
+    pointer-events: none;
+    font-size: 2.5rem;
+    font-family: 'Arial Black', sans-serif;
+
+}
+
+.actie-knop:not(.uitgeschakeld) {
+    background: linear-gradient(to bottom, #f60a0a, #8b0000);
+}
+
+.actie-knop:not(.uitgeschakeld):hover {
+    transform: translateX(-50%) scale(1.1);
+    background: linear-gradient(to bottom, #ff3333, #a00000);
+    box-shadow: 0 15px 30px rgba(255,0,0,0.4);
+}
+
+/* --- POP-UP ALGEMEEN (Voor 7 en Boer) --- */
+.popup-overlay {
+    position: absolute;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background-color: rgba(0, 0, 0, 0.8); /* Iets donkerder gemaakt voor meer focus */
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.popup-container {
+    background-color: #e0e0e0;
+    border: 6px solid black; /* Dikkere rand */
+    border-radius: 20px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; 
+    margin-bottom: 35px;
+    box-shadow: 0 30px 60px rgba(0,0,0,0.7);
+    width: 950px; /* Vastgestelde, veel grotere breedte */
+    max-width: 95vw;
+}
+
+.popup-speel-knop {
+    background: #cc0000;
+    color: hsl(0, 50%, 99%);
+    font-family: 'Arial Black', sans-serif;
+    padding: 20px 60px;
+    border: 6px solid black;
+    border-radius: 25px;
+    cursor: pointer;
+    text-transform: capitalize;
+    transition: all 0.1s;
+    font-size: 2.5rem;
+}
+
+.popup-speel-knop:active:not(.uitgeschakeld) {
+    transform: translateY(12px);
+    box-shadow: 0 0px 0px #800000;
+}
+
+.popup-speel-knop.uitgeschakeld {
+    background: #333;
+    color: #777;
+    border-color: #555;
+    box-shadow: none;
+    pointer-events: none;
+}
+
+/* --- STYLING SPECIFIEK VOOR DE 7 --- */
+.popup-rij {
+    display: flex;
+    height: 180px; /* Rijen veel hoger gemaakt */
+}
+
+.popup-rij:first-child {
+    border-bottom: 5px solid black; /* Dikkere tussenlijn */
+}
+
+.popup-pion-vak {
+    width: 200px; /* Veel breder vak voor de hoofd-pion */
+    border-right: 5px solid black;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #e0e0e0;
+}
+
+.popup-pion-img {
+    width: 100px; /* Foto van de hoofdpion veel groter */
+    height: 100px;
+    object-fit: contain;
+}
+
+.popup-stappen-vak {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-grow: 1; /* Laat de pionnetjes netjes de rest van de ruimte vullen */
+    padding: 0 50px;
+    gap: 25px; /* Meer ruimte tussen de stap-pionnetjes */
+}
+
+.stap-icoon {
+    width: 65px; /* Stap-pionnetjes groter */
+    height: 95px;
+    cursor: pointer;
+    transition: transform 0.1s ease;
+}
+
+.stap-icoon:hover {
+    transform: scale(1.15) translateY(-5px);
+}
+
+/* --- STYLING SPECIFIEK VOOR DE BOER --- */
+.boer-rij {
+    display: flex;
+    justify-content: center;
+    gap: 100px; /* Veel meer ruimte tussen de vijanden */
+    padding: 10px 0; /* Ruimte boven en onder de rijen */
+}
+
+.boer-pion-icoon {
+    width: 85px; /* Vijandelijke pionnen veel groter */
+    height: 120px;
+    cursor: pointer;
+    transition: transform 0.2s ease, filter 0.2s ease;
+    transform: scale(0.8);
+}
+
+.boer-pion-icoon:hover {
+    transform: scale(1.05) translateY(-5px);
+}
+
+.boer-pion-icoon.geselecteerd-boer {
+    filter: drop-shadow(0 0 15px #00ff00) brightness(1.3);
+    transform: scale(1.05); /* Nog iets duidelijker als hij is aangeklikt */
+}
+/* =======================================================
+   --- STYLING VOOR DE UITLEG SCHERMEN EN KNOPPEN --- 
+   ======================================================= */
+
+.start-knoppen-rij {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    margin-top: 50px;
+}
+
+.uitleg-knop {
+    padding: 20px 40px;
+    font-size: 1.8rem;
+    font-family: 'Arial Black', sans-serif;
+    color: white;
+    background: linear-gradient(to bottom, #2b5876, #4e4376);
+    border: 5px solid rgb(0, 0, 0);
+    border-radius: 30px;
+    cursor: pointer;
+    box-shadow: 0 8px 15px rgba(0,0,0,0.5);
+    text-transform: uppercase;
+    transition: all 0.2s ease;
+}
+
+.uitleg-knop:hover {
+    transform: scale(1.05);
+    background: linear-gradient(to bottom, #3b749a, #5f528f);
+}
+
+.uitleg-knop:active {
+    transform: translateY(8px);
+    box-shadow: 0 0px 0px rgba(0,0,0,0.5);
+}
+
+/* --- KOGELVRIJE FULL-SCREEN CONTAINER --- */
+.tekst-container {
+    padding: 40px 60px 40px 60px; /* Ruimte netjes gelijkgetrokken */
+    text-align: left;
+    width: 95vw;  /* Maakt het vlak 95% van je schermbreedte */
+    height: 95vh; /* Maakt het vlak 95% van je schermhoogte */
+    margin-bottom: 0 !important; 
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between; /* Drukt de titel omhoog en de knop netjes omlaag */
+}
+
+.tekst-container h2 {
+    font-size: 3.5rem;
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #222;
+    text-align: center;
+    border-bottom: 4px solid #222;
+    padding-bottom: 10px;
+    flex-shrink: 0; 
+}
+
+.tekst-inhoud {
+    font-family: 'Arial', sans-serif;
+    font-size: 1.6rem; /* Iets groter en perfect leesbaar op een groot scherm */
+    line-height: 1.6;
+    color: #111;
+    overflow: hidden; /* DIT HAALT DE SCROLLFUNCTIE DEFINITIEF WEG */
+    flex-grow: 1; /* Neemt alle overgebleven ruimte in de pop-up in */
+    display: flex;
+    flex-direction: column;
+    justify-content: center; /* Centreert de letters perfect verticaal in de ruimte */
+}
+
+.tekst-inhoud ul {
+    background-color: #f5f5f5;
+    padding: 25px 40px;
+    border-radius: 15px;
+    border: 2px solid #ccc;
+    margin: 20px 0;
+}
+
+.tekst-inhoud li {
+    margin-bottom: 15px;
+}
+
+/* --- DE TERUG KNOP --- */
+.terug-knop {
+    position: relative; 
+    left: auto;
+    bottom: auto;
+    transform: none;
+    align-self: center; /* Centreert de knop horizontaal */
+    padding: 15px 100px;
+    margin-top: 20px;
+    flex-shrink: 0; /* Zorgt dat de browser deze knop nóóit onzichtbaar of plat mag maken */
+}

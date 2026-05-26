@@ -1,11 +1,11 @@
 def movePawn(board, card, pawn, pawn2 = None, movePawn2 = None):
-    if (card.face == "7"  and pawn2 and movePawn2):
+    if card.face == "7"  and pawn2 and movePawn2:
         return splitSeven(board, pawn, pawn2, movePawn2)
-    elif (card.face == "J" and pawn and pawn2):
+    elif card.face == "J" and pawn and pawn2:
         return switch(board, pawn, pawn2)
-    elif ((card.face == "K" or card.face == "A") and (not pawn.inPlay)):
+    elif (card.face == "K" or card.face == "A") and (not pawn.inPlay):
         return enterPlay(board, pawn)
-    elif ((not card.face == "J") and (not card.face == "K")):
+    elif (not card.face == "J") and (not card.face == "K") and pawn.inPlay:
         steps = getSteps(card);
         return moveOnePawn(board, steps, pawn)
     else:
@@ -39,7 +39,7 @@ def switch(board, pawn, pawn2):
 
 def enterPlay(board, pawn):
     pawn.position = pawn.startSpace
-    if checkMove(pawn, 0):
+    if checkMove(board, pawn, 0):
         board.update(pawn, 0)
         pawn.inPlay = True
         return True
