@@ -1,7 +1,7 @@
 import asyncio
-from board import Board
-from move import movePawn
-from player import Player
+from game_components.board import Board
+from game_logic.move import movePawn
+from game_components.player import Player
 from connection.communication import CommunicationManager
 
 class GameManager:

@@ -1,6 +1,6 @@
-from space import Space
-from player import Player
-from deck import Deck
+from game_components.space import Space
+from game_components.player import Player
+from game_components.deck import Deck
 
 class Board:
     spaces = []
