@@ -1,6 +1,5 @@
 import json
 import serial
-import asyncio
 import threading
 from typing import List, Dict, Optional
 from queue import Queue

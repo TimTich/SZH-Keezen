@@ -1,6 +1,4 @@
 class Card:
 
-    def __init__(self, face, steps, rule):
+    def __init__(self, face):
         self.face = face
-        #self.steps = steps
-        #self.rule = rule

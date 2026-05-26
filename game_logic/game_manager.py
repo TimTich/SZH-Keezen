@@ -2,7 +2,7 @@ import asyncio
 from board import Board
 from move import movePawn
 from player import Player
-from communication import CommunicationManager
+from connection.communication import CommunicationManager
 
 class GameManager:
     
@@ -16,7 +16,7 @@ class GameManager:
     def handleEvent(self, event):
         t = event["type"]
 
-        if t == "PLAYER_JOIN":
+        if t == "PLAYER_JOIN" and not self.game_started:
             self.players.append(Player("player" + str(event["player_id"]), event["player_id"]))
 
         elif t == "CONFIRM_START":
@@ -64,3 +64,4 @@ class GameManager:
     def playCard(self, player_id, card, pawn):
         if player_id == self.current_player_index:
             movePawn(self.board, card, pawn)
+            self.current_player_index = (self.current_player_index + 1) % len(self.players)
