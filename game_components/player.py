@@ -1,4 +1,4 @@
-from pawn import Pawn
+from game_components.pawn import Pawn
 
 class Player:
     def __init__(self, name, player_id):
