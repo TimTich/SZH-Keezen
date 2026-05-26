@@ -13,4 +13,4 @@ class GameLoop:
     def processEvents(self):
         while not self.queue.empty():
             event = self.queue.get()
-            self.game.handle_event(event)
+            self.game.handleEvent(event)
