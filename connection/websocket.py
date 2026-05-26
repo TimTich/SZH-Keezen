@@ -14,6 +14,6 @@ async def websocket_handler(websocket, comm_manager, path):
         comm_manager.remove_websocket_client(websocket)
 
 async def start_websocket_server():
-    """Start WebSocket server on localhost:8765"""
-    async with websockets.serve(websocket_handler, "localhost", 8765):
+    """Start WebSocket server on 0.0.0.0:8765"""
+    async with websockets.serve(websocket_handler, "0.0.0.0", 8765):
         await asyncio.Future()  # Run forever
