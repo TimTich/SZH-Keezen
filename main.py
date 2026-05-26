@@ -3,7 +3,7 @@ import queue
 from connection.communication import CommunicationManager
 from connection.websocket import start_websocket_server
 from game_logic import game_loop
-from game_manager import GameManager
+from game_logic.game_manager import GameManager
 
 
 async def main():
