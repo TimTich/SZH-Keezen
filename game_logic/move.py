@@ -5,6 +5,9 @@ def movePawn(board, card, pawn, pawn2 = None, movePawn2 = None):
         return switch(board, pawn, pawn2)
     elif (card.face == "K" or card.face == "A") and (not pawn.inPlay):
         return enterPlay(board, pawn)
+    elif (card.face == "4") and pawn.inPlay:
+        steps = getSteps(card);
+        return moveBack(board, steps, pawn)
     elif (not card.face == "J") and (not card.face == "K") and pawn.inPlay:
         steps = getSteps(card);
         return moveOnePawn(board, steps, pawn)
@@ -12,14 +15,20 @@ def movePawn(board, card, pawn, pawn2 = None, movePawn2 = None):
         return False
 
 def moveOnePawn(board, steps, pawn):
-    if checkMove(board, pawn, steps):
+    if checkMove(board, pawn, steps + 1):
+        board.update(pawn, steps)
+        pawn.updatePosition(steps)
+    return False
+
+def moveBack(board, steps, pawn):
+    if checkMove(board, pawn, steps - 1, -1):
         board.update(pawn, steps)
         pawn.updatePosition(steps)
     return False
 
 def splitSeven(board, pawn, pawn2, movePawn2):
     pawn1Steps = 7 - movePawn2
-    if checkMove(board, pawn2, movePawn2) and checkMove(board, pawn, pawn1Steps):
+    if checkMove(board, pawn2, movePawn2 + 1) and checkMove(board, pawn, pawn1Steps + 1):
         board.update(pawn, pawn1Steps)
         pawn.updatePosition(pawn1Steps)
         board.update(pawn2, movePawn2)
@@ -46,10 +55,10 @@ def enterPlay(board, pawn):
     pawn.position = pawn.basePosition
     return False
 
-def checkMove(board, pawn, steps):
+def checkMove(board, pawn, steps, direction = 1):
     endZone = False;
     stepsTaken = 0
-    for step in range(steps):
+    for step in range(1, steps, direction):
         if endZone:
             if pawn.endZoneStart + stepsTaken >= len(board.spaces) or step - stepsTaken > 4:
                 return False
