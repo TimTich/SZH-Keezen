@@ -21,9 +21,6 @@ class Board:
                  player = self.players[(number // 4) % 4]
             self.spaces.append(Space(number + 65, player))
 
-
-            self.spaces.append(Space(number + 65, ))
-
     def update(self, pawn, steps, switch = False):
         self.spaces[pawn.position].occupiedBy = None
         currentPawn = self.spaces[pawn.position + steps].occupiedBy
