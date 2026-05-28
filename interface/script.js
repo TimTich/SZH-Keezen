@@ -2,12 +2,17 @@
 // COMMUNICATIE MET DE RASPBERRY PI
 // ============================================
 // Let op: als je de interface straks op een los tablet opent, 
-// verander 'localhost' dan naar het IP-adres van je Raspberry Pi!
-const piAddress = "ws://192.168.1.50:8765";
+// zorg dat je de pagina via http://localhost:8000 opent zodat de WebSocket goed kan verbinden.
+const hostName = window.location.hostname || "localhost";
+const piAddress = `ws://${hostName}:8765`;
 let socket;
 // Vraagt bij het openen van de pagina welk speler-nummer je bent
 let invoer = prompt("Welke speler ben je? (Vul in: 0, 1, 2 of 3)", "0");
 let spelerId = parseInt(invoer);
+if (isNaN(spelerId) || spelerId < 0 || spelerId > 3) {
+    spelerId = 0;
+}
+updateJouwSpeler(spelerId);
 
 function verbindMetPi() {
     socket = new WebSocket(piAddress);
@@ -30,11 +35,17 @@ function verbindMetPi() {
             document.getElementById('start-scherm').classList.add('verborgen');
             document.getElementById('spel-scherm').classList.remove('verborgen');
         } 
+        else if (data.type === "PLAYER_COUNT") {
+            updateSpelerTeller(data.player_count);
+        }
         else if (data.type === "NIEUWE_HAND") {
             tekenKaarten(data.kaarten); // Tekent de 4 of 5 nieuwe kaarten
         }
         else if (data.type === "UPDATE_BORD") {
             updatePionPosities(data.pionnen); // Past de cijfertjes op de pionnen aan
+        }
+        else if (data.type === "CURRENT_PLAYER") {
+            updateHuidigeBeurt(data.player_id);
         }
         else if (data.type === "FOUT_ZET") {
             alert(data.bericht); // Laat de waarschuwing van de Pi zien
@@ -53,6 +64,39 @@ function verbindMetPi() {
 function verstuurBericht(berichtObject) {
     if (socket && socket.readyState === WebSocket.OPEN) {
         socket.send(JSON.stringify(berichtObject));
+    }
+}
+
+function updateSpelerTeller(aantalSpelers) {
+    const teller = document.getElementById('speler-teller');
+    if (teller) {
+        teller.textContent = `${aantalSpelers}/4`;
+    }
+    const speelKnop = document.getElementById('speel-knop');
+    if (speelKnop) {
+        if (aantalSpelers >= 4) {
+            speelKnop.classList.remove('uitgeschakeld');
+        } else {
+            speelKnop.classList.add('uitgeschakeld');
+        }
+    }
+}
+
+function updateHuidigeBeurt(playerId) {
+    const beurtElement = document.getElementById('huidige-beurt');
+    if (beurtElement) {
+        beurtElement.textContent = `HUIDIGE BEURT: speler ${playerId}`;
+    }
+}
+
+function updateJouwSpeler(playerId) {
+    const jouwSpelerElement = document.getElementById('jouw-speler');
+    if (jouwSpelerElement) {
+        jouwSpelerElement.textContent = `Jij bent speler ${playerId}`;
+    }
+    const jouwSpelerGameElement = document.getElementById('jouw-speler-game');
+    if (jouwSpelerGameElement) {
+        jouwSpelerGameElement.textContent = `Jij bent speler ${playerId}`;
     }
 }
 
@@ -106,12 +150,12 @@ function tekenKaarten(hand) {
 }
 
 function updatePionPosities(pionnenData) {
-    // De Pi stuurt dit: { "pion-1": "bank", "pion-2": 5, ... }
+    // De Pi stuurt nu labelstrings voor elke pion, inclusief 'b', 'e', 'B' of een nummer met annotatie.
     for (let pionId in pionnenData) {
         let pionElement = document.querySelector(`.pion[data-id='${pionId}']`);
         if (pionElement) {
             let label = pionElement.querySelector('.pos-label');
-            if(label) label.innerText = pionnenData[pionId];
+            if (label) label.innerText = pionnenData[pionId];
         }
     }
 }

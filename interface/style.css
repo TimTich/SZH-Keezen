@@ -58,6 +58,18 @@ body {
     box-shadow: 0 0 25px rgba(76, 175, 80, 0.6);
 }
 
+.pos-label {
+    position: absolute;
+    bottom: 16px;
+    width: 100%;
+    text-align: center;
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: #111;
+    text-shadow: 0 0 8px rgba(255,255,255,0.6);
+    pointer-events: none;
+}
+
 .pion-links-boven { top: 30px; left: 30px; }
 .pion-rechts-boven { top: 30px; right: 30px;  }
 .pion-links-onder { bottom: 30px; left: 30px; }
@@ -140,6 +152,53 @@ body {
     border: 5px solid rgb(0, 0, 0);
     border-radius: 50px;
     cursor: pointer;
+    transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.speel-knop:hover:not(.uitgeschakeld) {
+    transform: scale(1.05);
+    background: linear-gradient(to bottom, #ff4d4d, #b30000);
+}
+
+.speel-knop.uitgeschakeld {
+    background: #666;
+    border-color: #999;
+    color: #aaa;
+    cursor: not-allowed;
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.speler-status {
+    color: white;
+    font-size: 1.5rem;
+    margin-bottom: 30px;
+    padding: 20px;
+    background-color: rgba(0, 0, 0, 0.3);
+    border-radius: 10px;
+    border: 2px solid #fff;
+}
+
+.speler-status #speler-teller {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: #4caf50;
+}
+
+.jouw-speler-klein {
+    position: absolute;
+    bottom: 8vh;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #ffffff;
+    font-size: 1.2rem;
+    letter-spacing: 0.08rem;
+    text-transform: uppercase;
+    background: rgba(0, 0, 0, 0.35);
+    padding: 8px 16px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    z-index: 45;
 }
 
 .stop-knop {

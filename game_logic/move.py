@@ -4,7 +4,7 @@ def movePawn(board, card, pawn, pawn2 = None, movePawn2 = None):
     elif card.face == "J" and pawn and pawn2:
         return switch(board, pawn, pawn2)
     elif (card.face == "K" or card.face == "A") and (not pawn.inPlay):
-        return enterPlay(board, pawn)
+        return enterPlay(board, pawn, card.face)
     elif (not card.face == "J") and (not card.face == "K") and pawn.inPlay:
         steps = getSteps(card);
         return moveOnePawn(board, steps, pawn)
@@ -37,11 +37,12 @@ def switch(board, pawn, pawn2):
         return True
     return False
 
-def enterPlay(board, pawn):
+def enterPlay(board, pawn, card_face=None):
     pawn.position = pawn.startSpace
     if checkMove(board, pawn, 0):
         board.update(pawn, 0)
         pawn.inPlay = True
+        pawn.entry_card_face = card_face
         return True
     pawn.position = pawn.basePosition
     return False

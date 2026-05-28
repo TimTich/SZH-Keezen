@@ -9,6 +9,7 @@ class CommunicationManager:
     
     def __init__(self, event_queue: Optional[Queue] = None):
         self.websocket_clients: List = []
+        self.websocket_player_map: Dict = {}
         self.usb_serials: Dict[str, serial.Serial] = {}
         self.event_queue = event_queue
         self.usb_listener_threads: Dict[str, threading.Thread] = {}
@@ -24,7 +25,37 @@ class CommunicationManager:
         """Unregister a WebSocket client"""
         if client in self.websocket_clients:
             self.websocket_clients.remove(client)
+            self.websocket_player_map.pop(client, None)
             print(f"WebSocket client disconnected. Total clients: {len(self.websocket_clients)}")
+
+    def register_websocket_player(self, client, player_id):
+        """Link a websocket client to a player ID"""
+        if client in self.websocket_clients:
+            self.websocket_player_map[client] = player_id
+            print(f"WebSocket client registered for player {player_id}")
+
+    def get_player_websocket(self, player_id):
+        """Return the connected websocket client for a given player ID."""
+        for client, pid in self.websocket_player_map.items():
+            if pid == player_id:
+                return client
+        return None
+
+    async def _send_websocket_message(self, client, message: Dict):
+        """Send a JSON message to a single websocket client."""
+        try:
+            await client.send(json.dumps(message))
+        except Exception as e:
+            print(f"Error sending message to websocket client: {e}")
+            self.remove_websocket_client(client)
+
+    async def send_player_message(self, player_id, message: Dict):
+        """Send a message only to the websocket client of a specific player."""
+        client = self.get_player_websocket(player_id)
+        if client:
+            await self._send_websocket_message(client, message)
+        else:
+            print(f"No websocket client found for player {player_id}")
     
     def register_usb_serial(self, port: str, baudrate: int = 9600) -> bool:
         """Register a USB serial connection"""
@@ -58,6 +89,7 @@ class CommunicationManager:
         """Handle incoming WebSocket message and add to event queue"""
         try:
             event = json.loads(message)
+            event["_websocket"] = client
             if self.event_queue:
                 self.event_queue.put(event)
                 print(f"Added WebSocket event to queue: {event['type']}")
@@ -137,13 +169,12 @@ class CommunicationManager:
             print("No WebSocket clients connected")
             return
         
-        message_json = json.dumps(message).encode('utf-8')
         disconnected_clients = []
         
         for client in self.websocket_clients:
             try:
-                await client.send(message_json)
-                print(f"Sent game start message to WebSocket client")
+                await client.send(json.dumps(message))
+                print(f"Sent message to WebSocket client")
             except Exception as e:
                 print(f"Error sending to WebSocket client: {e}")
                 disconnected_clients.append(client)

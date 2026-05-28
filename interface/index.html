@@ -10,7 +10,12 @@
 
     <div id="start-scherm" class="container">
         <h1 class="spel-titel">KEEZEN</h1>
-        <button class="speel-knop" onclick="startSpel()">Speel</button>
+        <div id="speler-status" class="speler-status">
+            Wachten op spelers...<br>
+            <span id="speler-teller">0/4</span>
+            <div id="jouw-speler" class="jouw-speler">Jij bent speler 0</div>
+        </div>
+        <button id="speel-knop" class="speel-knop uitgeschakeld" onclick="startSpel()">Speel</button>
         
         <div class="start-knoppen-rij">
             <button class="uitleg-knop" onclick="openUitlegKeezen()">Uitleg Keezen</button>
@@ -19,16 +24,17 @@
     </div>
 
     <div id="spel-scherm" class="container verborgen">
-        <div class="pion pion-links-boven" onclick="selecteerPion(this)"></div>
-        <div class="pion pion-rechts-boven" onclick="selecteerPion(this)"></div>
-        <div class="pion pion-links-onder" onclick="selecteerPion(this)"></div>
-        <div class="pion pion-rechts-onder" onclick="selecteerPion(this)"></div>
-
+        <div class="pion pion-links-boven" data-id="pion-1" onclick="selecteerPion(this)"><span class="pos-label"></span></div>
+        <div class="pion pion-rechts-boven" data-id="pion-2" onclick="selecteerPion(this)"><span class="pos-label"></span></div>
+        <div class="pion pion-links-onder" data-id="pion-3" onclick="selecteerPion(this)"><span class="pos-label"></span></div>
+        <div class="pion pion-rechts-onder" data-id="pion-4" onclick="selecteerPion(this)"><span class="pos-label"></span></div>
         <h1 id="instructie-tekst" class="spel-titel-klein">MAAK JE KEUZE</h1>
+        <div id="huidige-beurt" class="beurt-indicator">HUIDIGE BEURT: speler 0</div>
 
         <div id="hand-kaarten" class="hand-kaarten-balk"></div>
 
         <button id="bevestig-knop" class="actie-knop uitgeschakeld" onclick="speelZet()">Speel</button>
+        <div id="jouw-speler-game" class="jouw-speler-klein">Jij bent speler 0</div>
         
         <div id="popup-7" class="popup-overlay verborgen">
             <div class="popup-container">
