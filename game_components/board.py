@@ -16,7 +16,13 @@ class Board:
             else:
                 self.spaces.append(Space(number + 1))
         for number in range(32):
-            self.spaces.append(Space(number + 65, self.players[(number // 4) % len(self.players)]))
+            player = None
+            if number // 4 < len(self.players):
+                 player = self.players[(number // 4) % 4]
+            self.spaces.append(Space(number + 65, player))
+
+
+            self.spaces.append(Space(number + 65, ))
 
     def update(self, pawn, steps, switch = False):
         self.spaces[pawn.position].occupiedBy = None
