@@ -56,7 +56,7 @@ def enterPlay(board, pawn):
     return False
 
 def checkMove(board, pawn, steps, direction = 1):
-    endZone = pawn.position >= 80;
+    endZone = pawn.position <= 80 and pawn.position >= 64;
     stepsTaken = 0
     for step in range(1, steps, direction):
         if endZone:
