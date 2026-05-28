@@ -130,6 +130,22 @@ class CommunicationManager:
         
         # Send to USB serials
         self._broadcast_usb_serial(message)
+
+    async def broadcast_turn_end(self, pawn):
+        """Broadcast turn end message to all connected WebSocket clients and USB serials"""
+        message = {
+            "type": "TURN_END",
+            "status": "TURN_ENDED",
+            "player_id": pawn.player_id,
+            "pawn": pawn,
+            "space": pawn.position
+        }
+        
+        # Send to WebSocket clients
+        await self._broadcast_websocket(message)
+        
+        # Send to USB serials
+        self._broadcast_usb_serial(message)
     
     async def _broadcast_websocket(self, message: Dict):
         """Send message to all connected WebSocket clients"""

@@ -44,6 +44,18 @@ class GameManager:
         self.board = Board(self.players)
         
         # Notify all connected WebSocket and USB serial devices
+        self.broadcast(self.comm.broadcast_game_start())
+        
+        # Initialize game logic here
+        print("Game initialized and notifications sent")
+
+    def playCard(self, player_id, card, pawn):
+        if player_id == self.current_player_index:
+            movePawn(self.board, card, pawn)
+            self.current_player_index = (self.current_player_index + 1) % len(self.players)
+            self.broadcast(self.comm.broadcast_turn_end(pawn))
+
+    def broadcast(self, message):
         try:
             # Create a new event loop if one doesn't exist
             try:
@@ -53,15 +65,7 @@ class GameManager:
                 asyncio.set_event_loop(loop)
             
             # Run the broadcast coroutine
-            loop.run_until_complete(self.comm.broadcast_game_start())
+            loop.run_until_complete(message)
         except Exception as e:
             print(f"Error broadcasting game start: {e}")
             # Even if broadcast fails, continue with game logic
-        
-        # Initialize game logic here
-        print("Game initialized and notifications sent")
-
-    def playCard(self, player_id, card, pawn):
-        if player_id == self.current_player_index:
-            movePawn(self.board, card, pawn)
-            self.current_player_index = (self.current_player_index + 1) % len(self.players)
