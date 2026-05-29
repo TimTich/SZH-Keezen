@@ -107,6 +107,15 @@ class GameManager:
         print("Game initialized and notifications sent")
 
     def playCard(self, player_id, card_data, pawn_id, pawn2_id=None, movePawn2=None):
+        try:
+            player_id = int(player_id)
+        except (TypeError, ValueError):
+            self._create_async_task(self.comm.send_player_message(player_id, {
+                "type": "FOUT_ZET",
+                "bericht": "Ongeldig speler-ID ontvangen."
+            }))
+            return
+
         if player_id != self.current_player_index:
             self._create_async_task(self.comm.send_player_message(player_id, {
                 "type": "FOUT_ZET",
@@ -132,6 +141,30 @@ class GameManager:
             pawn2 = player.pawns[pawn2_id]
 
         card = Card(card_data["face"])
+        if not pawn.inPlay and card.face not in ("A", "K"):
+            has_ace_or_king = any(c.face in ("A", "K") for c in player.cards)
+            if not has_ace_or_king:
+                self._create_async_task(self.comm.send_player_message(player_id, {
+                    "type": "MOVE_SUCCEEDED"
+                }))
+                self._create_async_task(self.comm.send_player_message(player_id, {
+                    "type": "FLIP_ALL_CARDS"
+                }))
+                self.current_player_index = (self.current_player_index + 1) % len(self.players)
+                self._create_async_task(self.broadcast_current_player())
+                for player in self.players:
+                    self._create_async_task(self.comm.send_player_message(player.id, {
+                        "type": "UPDATE_BORD",
+                        "pionnen": self.get_board_state_for_player(player)
+                    }))
+                return
+            else:
+                self._create_async_task(self.comm.send_player_message(player_id, {
+                    "type": "FOUT_ZET",
+                    "bericht": "Je moet eerst een Aas of Koning spelen om deze pion in te kunnen zetten."
+                }))
+                return
+
         success = movePawn(self.board, card, pawn, pawn2, movePawn2)
 
         if not success:
@@ -140,6 +173,10 @@ class GameManager:
                 "bericht": "Ongeldige zet. Probeer een andere pion of kaart."
             }))
             return
+
+        self._create_async_task(self.comm.send_player_message(player_id, {
+            "type": "MOVE_SUCCEEDED"
+        }))
 
         self.current_player_index = (self.current_player_index + 1) % len(self.players)
         self._create_async_task(self.broadcast_current_player())

@@ -6,6 +6,7 @@
 const hostName = window.location.hostname || "localhost";
 const piAddress = `ws://${hostName}:8765`;
 let socket;
+let huidigeSpeler = 0;
 // Vraagt bij het openen van de pagina welk speler-nummer je bent
 let invoer = prompt("Welke speler ben je? (Vul in: 0, 1, 2 of 3)", "0");
 let spelerId = parseInt(invoer);
@@ -47,6 +48,12 @@ function verbindMetPi() {
         else if (data.type === "CURRENT_PLAYER") {
             updateHuidigeBeurt(data.player_id);
         }
+        else if (data.type === "MOVE_SUCCEEDED") {
+            draaiGeselecteerdeKaartOm();
+        }
+        else if (data.type === "FLIP_ALL_CARDS") {
+            draaiAlleKaartenOm();
+        }
         else if (data.type === "FOUT_ZET") {
             alert(data.bericht); // Laat de waarschuwing van de Pi zien
             // Haal de groene randjes weg zodat de speler opnieuw kan kiezen
@@ -83,9 +90,26 @@ function updateSpelerTeller(aantalSpelers) {
 }
 
 function updateHuidigeBeurt(playerId) {
+    huidigeSpeler = playerId;
     const beurtElement = document.getElementById('huidige-beurt');
     if (beurtElement) {
         beurtElement.textContent = `HUIDIGE BEURT: speler ${playerId}`;
+    }
+    updateBeurtStatus();
+}
+
+function updateBeurtStatus() {
+    const bevestigKnop = document.getElementById('bevestig-knop');
+    const jouwSpelerGameElement = document.getElementById('jouw-speler-game');
+    if (bevestigKnop) {
+        if (spelerId === huidigeSpeler) {
+            bevestigKnop.classList.remove('uitgeschakeld');
+        } else {
+            bevestigKnop.classList.add('uitgeschakeld');
+        }
+    }
+    if (jouwSpelerGameElement) {
+        jouwSpelerGameElement.textContent = spelerId === huidigeSpeler ? `Jij bent speler ${spelerId} (jouw beurt)` : `Jij bent speler ${spelerId}`;
     }
 }
 
@@ -161,6 +185,11 @@ function updatePionPosities(pionnenData) {
 }
 
 function selecteerKaart(el) {
+    if (spelerId !== huidigeSpeler) {
+        alert(`Wacht op jouw beurt. Het is nu beurt van speler ${huidigeSpeler}.`);
+        return;
+    }
+
     document.querySelectorAll('.speelkaart-wrapper').forEach(w => w.classList.remove('geselecteerd'));
     el.classList.add('geselecteerd');
     
@@ -175,6 +204,11 @@ function selecteerKaart(el) {
 }
 
 function selecteerPion(el) {
+    if (spelerId !== huidigeSpeler) {
+        alert(`Wacht op jouw beurt. Het is nu beurt van speler ${huidigeSpeler}.`);
+        return;
+    }
+
     const geselecteerdeKaart = document.querySelector('.speelkaart-wrapper.geselecteerd img');
     const kaartNaam = geselecteerdeKaart ? geselecteerdeKaart.alt : "";
     
@@ -200,10 +234,19 @@ function checkSelecties() {
     const aantalPionnen = document.querySelectorAll('.pion.geselecteerd').length;
     const bevestigKnop = document.getElementById('bevestig-knop');
 
-    if (kaartNaam === '7') {
-        (aantalPionnen === 2) ? bevestigKnop.classList.remove('uitgeschakeld') : bevestigKnop.classList.add('uitgeschakeld');
+    let knopActief = false;
+    if (spelerId === huidigeSpeler) {
+        if (kaartNaam === '7') {
+            knopActief = aantalPionnen === 2;
+        } else {
+            knopActief = geselecteerdeKaart && aantalPionnen === 1;
+        }
+    }
+
+    if (knopActief) {
+        bevestigKnop.classList.remove('uitgeschakeld');
     } else {
-        (geselecteerdeKaart && aantalPionnen === 1) ? bevestigKnop.classList.remove('uitgeschakeld') : bevestigKnop.classList.add('uitgeschakeld');
+        bevestigKnop.classList.add('uitgeschakeld');
     }
 }
 
@@ -212,6 +255,11 @@ function checkSelecties() {
 // ============================================
 
 function speelZet() {
+    if (spelerId !== huidigeSpeler) {
+        alert(`Wacht op jouw beurt. Het is nu beurt van speler ${huidigeSpeler}.`);
+        return;
+    }
+
     const kaartElement = document.querySelector('.speelkaart-wrapper.geselecteerd img');
     if (!kaartElement) return;
 
@@ -233,12 +281,15 @@ function speelZet() {
             card: { face: geselecteerdeKaart },
             pion_id: pionIdNummer
         });
-        
-        draaiGeselecteerdeKaartOm();
     }
 }
 
 function bevestig7Zet() { 
+    if (spelerId !== huidigeSpeler) {
+        alert(`Wacht op jouw beurt. Het is nu beurt van speler ${huidigeSpeler}.`);
+        return;
+    }
+
     const pionnen = document.querySelectorAll('.pion.geselecteerd');
     const geselecteerdeKaart = document.querySelector('.speelkaart-wrapper.geselecteerd img').alt;
 
@@ -256,11 +307,15 @@ function bevestig7Zet() {
         });
 
         document.getElementById('popup-7').classList.add('verborgen'); 
-        draaiGeselecteerdeKaartOm(); 
     }
 }
 
 function bevestigBoerZet() { 
+    if (spelerId !== huidigeSpeler) {
+        alert(`Wacht op jouw beurt. Het is nu beurt van speler ${huidigeSpeler}.`);
+        return;
+    }
+
     const eigenPion = document.querySelector('.pion.geselecteerd');
     const vijandigePion = document.querySelector('.boer-wrapper.geselecteerd-boer'); 
     const geselecteerdeKaart = document.querySelector('.speelkaart-wrapper.geselecteerd img').alt;
@@ -277,7 +332,6 @@ function bevestigBoerZet() {
         });
 
         document.getElementById('popup-boer').classList.add('verborgen'); 
-        draaiGeselecteerdeKaartOm(); 
     }
 }
 
@@ -292,6 +346,20 @@ function draaiGeselecteerdeKaartOm() {
         updateInstructie();
         checkSelecties();
     }
+}
+
+function draaiAlleKaartenOm() {
+    document.querySelectorAll('.speelkaart-wrapper').forEach(wrapper => {
+        if (!wrapper.classList.contains('gespeeld')) {
+            const img = wrapper.querySelector('img');
+            if (img) img.src = 'kaart15.png';
+            wrapper.classList.add('gespeeld');
+            wrapper.classList.remove('geselecteerd');
+        }
+    });
+    document.querySelectorAll('.pion').forEach(p => p.classList.remove('geselecteerd'));
+    updateInstructie();
+    checkSelecties();
 }
 
 // ============================================
