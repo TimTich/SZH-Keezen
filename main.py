@@ -1,5 +1,6 @@
 import asyncio
 import queue
+import sys
 import threading
 import webbrowser
 from functools import partial
@@ -12,11 +13,19 @@ from game_logic.game_manager import GameManager
 
 def start_static_http_server(port: int = 8000, directory: str = "interface") -> HTTPServer:
     handler = partial(SimpleHTTPRequestHandler, directory=directory)
-    server = HTTPServer(("0.0.0.0", port), handler)
-    thread = threading.Thread(target=server.serve_forever, daemon=True)
-    thread.start()
-    print(f"Static UI server running at http://localhost:{port}")
-    return server
+    for candidate_port in range(port, port + 10):
+        try:
+            server = HTTPServer(("0.0.0.0", candidate_port), handler)
+            thread = threading.Thread(target=server.serve_forever, daemon=True)
+            thread.start()
+            print(f"Static UI server running at http://localhost:{candidate_port}")
+            return server
+        except OSError as e:
+            if e.errno == 48:
+                print(f"Poort {candidate_port} is in gebruik, probeer volgende... ")
+                continue
+            raise
+    raise OSError(f"Geen vrije poort gevonden tussen {port} en {port + 9}")
 
 # --- DIT BLOKJE HEB JE NODIG OM DE MOTOR TE LATEN DRAAIEN ---
 async def async_game_loop(g_loop):
@@ -29,15 +38,16 @@ async def main():
     event_queue = queue.Queue()
     comm_manager = CommunicationManager(event_queue=event_queue)
     
-    # Register USB devices (Geeft op een Mac een kleine waarschuwing, maar stopt de code niet)
-    comm_manager.register_usb_serial("COM3", baudrate=9600)
-    comm_manager.listen_usb_serial("COM3")
+    # Alleen Windows gebruikt COM3 als USB seriële poort
+    if sys.platform.startswith("win"):
+        comm_manager.register_usb_serial("COM3", baudrate=9600)
+        comm_manager.listen_usb_serial("COM3")
+    else:
+        print("USB serial wordt overgeslagen op dit systeem; alleen Windows gebruikt COM3.")
     
     # Start de statische UI-server zodat index.html vanuit Python bereikbaar is
-    start_static_http_server(port=8000, directory="interface")
-    # Open vier browser tabs naar dezelfde lokale UI
-    for _ in range(4):
-        webbrowser.open_new_tab("http://localhost:8000")
+    server = start_static_http_server(port=8000, directory="interface")
+    webbrowser.open(f"http://localhost:{server.server_port}")
 
     # Start WebSocket server op de achtergrond
     websocket_task = asyncio.create_task(start_websocket_server(comm_manager))

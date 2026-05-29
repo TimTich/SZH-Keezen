@@ -39,6 +39,12 @@ function verbindMetPi() {
         else if (data.type === "PLAYER_COUNT") {
             updateSpelerTeller(data.player_count);
         }
+        else if (data.type === "ASSIGNED_PLAYER_ID") {
+            // Server heeft een ander speler-ID toegewezen (bijv. bij duplicate)
+            spelerId = data.player_id;
+            updateJouwSpeler(spelerId);
+            updateBeurtStatus();
+        }
         else if (data.type === "NIEUWE_HAND") {
             tekenKaarten(data.kaarten); // Tekent de 4 of 5 nieuwe kaarten
         }
@@ -71,6 +77,9 @@ function verbindMetPi() {
 function verstuurBericht(berichtObject) {
     if (socket && socket.readyState === WebSocket.OPEN) {
         socket.send(JSON.stringify(berichtObject));
+    } else {
+        console.warn('WebSocket is niet open, bericht niet verzonden:', berichtObject);
+        alert('Verbinding met de server is nog niet klaar. Vernieuw de pagina of probeer het opnieuw.');
     }
 }
 
@@ -81,11 +90,10 @@ function updateSpelerTeller(aantalSpelers) {
     }
     const speelKnop = document.getElementById('speel-knop');
     if (speelKnop) {
-        if (aantalSpelers >= 4) {
-            speelKnop.classList.remove('uitgeschakeld');
-        } else {
-            speelKnop.classList.add('uitgeschakeld');
-        }
+        const canStart = aantalSpelers >= 2 && aantalSpelers <= 4;
+        // Alleen visueel inschakelen/uitschakelen; maak knop altijd klikbaar zodat gebruikers kunnen proberen
+        speelKnop.classList.toggle('uitgeschakeld', !canStart);
+        console.log('updateSpelerTeller', aantalSpelers, 'canStart', canStart);
     }
 }
 
@@ -133,6 +141,12 @@ verbindMetPi();
 // ============================================
 
 function startSpel() {
+    const speelKnop = document.getElementById('speel-knop');
+    if (speelKnop && speelKnop.disabled) {
+        alert('Het spel kan nog niet starten, er zijn nog niet genoeg spelers verbonden.');
+        return;
+    }
+    console.log('startSpel clicked, socket state:', socket ? socket.readyState : 'nog niet verbonden');
     // Vertel de Pi dat deze speler er klaar voor is
     verstuurBericht({ type: "CONFIRM_START" });
 }

@@ -1,31 +1,37 @@
 from game_components.space import Space
-from game_components.player import Player
-from game_components.deck import Deck
 
 class Board:
-    spaces = []
-
     def __init__(self, players):
         self.players = players
+        self.spaces = []
         self.fillSpaces()
     
     def fillSpaces(self):
+        # We maken een woordenboekje om spelers makkelijk op hun ID op te zoeken
+        player_dict = {p.id: p for p in self.players}
+
         for number in range(64):
-            if number % 17 == 0 and self.players:
-                owner_index = (number // 17) % len(self.players)
-                self.spaces.append(Space(number + 1, self.players[owner_index]))
+            if number % 17 == 0:
+                expected_id = number // 17
+                owner = player_dict.get(expected_id, None)
+                self.spaces.append(Space(number + 1, owner))
             else:
                 self.spaces.append(Space(number + 1))
+                
         for number in range(32):
-            owner_index = (number // 4) % len(self.players) if self.players else 0
-            self.spaces.append(Space(number + 65, self.players[owner_index] if self.players else None))
+            expected_id = (number // 4) % 4
+            owner = player_dict.get(expected_id, None)
+            self.spaces.append(Space(number + 65, owner))
 
     def update(self, pawn, steps, switch = False):
-        self.spaces[pawn.position].occupiedBy = None
-        currentPawn = self.spaces[pawn.position + steps].occupiedBy
+        self.spaces[pawn.position].occupied_by = None
+        
+        target_space = self.spaces[pawn.position + steps]
+        currentPawn = target_space.occupied_by
+        
         if currentPawn and not switch:
             currentPawn.position = currentPawn.basePosition
             currentPawn.inPlay = False
             currentPawn.clear_entry_card()
-        self.spaces[pawn.position + steps].occupiedBy = pawn
-    
+            
+        target_space.occupied_by = pawn

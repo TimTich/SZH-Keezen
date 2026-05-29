@@ -6,7 +6,7 @@ def movePawn(board, card, pawn, pawn2 = None, movePawn2 = None):
     elif (card.face == "K" or card.face == "A") and (not pawn.inPlay):
         return enterPlay(board, pawn, card.face)
     elif (not card.face == "J") and (not card.face == "K") and pawn.inPlay:
-        steps = getSteps(card);
+        steps = getSteps(card)
         return moveOnePawn(board, steps, pawn)
     else:
         return False
@@ -15,6 +15,7 @@ def moveOnePawn(board, steps, pawn):
     if checkMove(board, pawn, steps):
         board.update(pawn, steps)
         pawn.updatePosition(steps)
+        return True
     return False
 
 def splitSeven(board, pawn, pawn2, movePawn2):
@@ -48,7 +49,7 @@ def enterPlay(board, pawn, card_face=None):
     return False
 
 def checkMove(board, pawn, steps):
-    endZone = False;
+    endZone = False
     stepsTaken = 0
     for step in range(steps):
         if endZone:
@@ -57,11 +58,16 @@ def checkMove(board, pawn, steps):
             space = board.spaces[pawn.endZoneStart + stepsTaken]
         else:
             space = board.spaces[(pawn.position + step) % 64]
-        if space.number == pawn.startSpace - 1 or (space.number == 64 and pawn.owner == 0):
+            
+        if space.number == pawn.startSpace - 1 or (space.number == 64 and int(pawn.owner) == 0):
             endZone = True
             stepsTaken = step
-        if (space.occuiedBy and space.occupiedBy.owner == space.owner.id): #No check for end zone yet
-            return False
+            
+        # FIX: De occuiedBy typo is eruit, en hij crasht nu niet meer.
+        bezetter = getattr(space, 'occupied_by', None)
+        if bezetter is not None and space.owner is not None:
+            if int(bezetter.owner) == space.owner.id:
+                return False
     return True
 
 def getSteps(card):
@@ -70,6 +76,6 @@ def getSteps(card):
     elif (card.face == "A"):
         return 1
     elif (card.face == "Q"):
-        return 14
+        return 13
     else:
         return int(card.face)

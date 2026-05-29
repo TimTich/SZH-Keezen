@@ -2,11 +2,10 @@ from game_components.card import Card
 import random
 
 class Deck:
-    cards = []
-    max_cards = None;
-
     def __init__(self, players):
         self.players = players
+        self.cards = [] # Nu netjes in de init!
+        self.max_cards = 0
         self.shuffle()
     
     def shuffle(self):
@@ -20,11 +19,8 @@ class Deck:
         self.max_cards = len(self.cards)
 
     def dealCards(self):
-        amount = None
-        if self.max_cards == len(self.cards):
-            amount = 5
-        else:
-            amount = 4
+        amount = 5 if self.max_cards == len(self.cards) else 4
         for _ in range(amount):
             for player in self.players:
-                player.cards.append(self.cards.pop())
+                if self.cards:
+                    player.cards.append(self.cards.pop())

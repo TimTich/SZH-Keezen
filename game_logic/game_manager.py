@@ -29,13 +29,31 @@ class GameManager:
         print(f"Game Manager: Processing event type '{t}'")
 
         if t == "PLAYER_JOIN" and not self.game_started:
-            player_id = event["player_id"]
-            print(f"PLAYER_JOIN received for player {player_id}")
-            if not any(p.id == player_id for p in self.players):
-                self.players.append(Player("player" + str(player_id), player_id))
-                print(f"Player {player_id} added. Total players: {len(self.players)}")
+            requested_id = event.get("player_id")
+            print(f"PLAYER_JOIN received (requested {requested_id})")
+            # Always assign the next free player ID (0..3) to avoid duplicates from clients
+            existing_ids = {p.id for p in self.players}
+            free_id = next((i for i in range(4) if i not in existing_ids), None)
+            if free_id is None:
+                print("Maximaal 4 spelers bereikt, geen extra speler toegevoegd.")
+                if event.get("_websocket"):
+                    self._create_async_task(self.comm.send_player_message(requested_id, {
+                        "type": "FOUT_ZET",
+                        "bericht": "Maximaal vier spelers toegestaan."
+                    }))
+                return
+
+            assigned_id = free_id
+            self.players.append(Player("player" + str(assigned_id), assigned_id))
+            print(f"Player {assigned_id} added. Total players: {len(self.players)}")
+
             if event.get("_websocket"):
-                self.comm.register_websocket_player(event["_websocket"], player_id)
+                # Register websocket for the assigned id and notify the client
+                self.comm.register_websocket_player(event["_websocket"], assigned_id)
+                self._create_async_task(self.comm.send_player_message(assigned_id, {
+                    "type": "ASSIGNED_PLAYER_ID",
+                    "player_id": assigned_id
+                }))
             
             # Broadcast het huidige spelerenaantal naar iedereen
             self._create_async_task(self.broadcast_player_count())
@@ -62,17 +80,19 @@ class GameManager:
     
     async def broadcast_current_player(self):
         """Broadcast which player is allowed to play next."""
+        if not self.players:
+            return
         message = {
             "type": "CURRENT_PLAYER",
-            "player_id": self.current_player_index
+            "player_id": self.players[self.current_player_index].id
         }
         await self.comm._broadcast_websocket(message)
     
     def startGame(self):
         if self.game_started:
             return
-        if len(self.players) < 4:
-            print(f"Spel kan nog niet starten! Wachten op minimaal 4 spelers. (Huidig: {len(self.players)})")
+        if len(self.players) < 2:
+            print(f"Spel kan nog niet starten! Wachten op minimaal 2 spelers. (Huidig: {len(self.players)})")
             for player in self.players:
                 self._create_async_task(self.comm.send_player_message(player.id, {
                     "type": "FOUT_ZET",
@@ -81,7 +101,10 @@ class GameManager:
             return
         
         print(f"Starting game with {len(self.players)} players...")
-        self.current_player_index = 0
+        # Zorg dat speler 0 altijd als eerste mag beginnen, wanneer aanwezig.
+        self.players.sort(key=lambda player: player.id)
+        starting_player_id = 0 if any(player.id == 0 for player in self.players) else self.players[0].id
+        self.current_player_index = next((index for index, player in enumerate(self.players) if player.id == starting_player_id), 0)
         self.game_started = True
         self.board = Board(self.players)
         self.deck = Deck(self.players)
@@ -116,7 +139,8 @@ class GameManager:
             }))
             return
 
-        if player_id != self.current_player_index:
+        current_player = self.players[self.current_player_index]
+        if player_id != current_player.id:
             self._create_async_task(self.comm.send_player_message(player_id, {
                 "type": "FOUT_ZET",
                 "bericht": "Het is niet jouw beurt."
@@ -195,8 +219,6 @@ class GameManager:
             return "B"
 
         label = str(pawn.position)
-        if pawn.entry_card_face and pawn.inPlay:
-            label += pawn.entry_card_face
         return label
 
     def get_board_state_for_player(self, player):

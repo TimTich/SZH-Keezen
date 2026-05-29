@@ -1,8 +1,13 @@
 import json
-import serial
 import threading
 from typing import List, Dict, Optional
 from queue import Queue
+
+try:
+    import serial
+except Exception:
+    serial = None
+    print("pyserial niet gevonden; USB-ondersteuning uitgeschakeld.")
 
 class CommunicationManager:
     """Manages communication with WebSocket clients and USB serial devices"""
@@ -59,12 +64,15 @@ class CommunicationManager:
     
     def register_usb_serial(self, port: str, baudrate: int = 9600) -> bool:
         """Register a USB serial connection"""
+        if serial is None:
+            print("Cannot register USB serial: pyserial not installed")
+            return False
         try:
             ser = serial.Serial(port, baudrate, timeout=1)
             self.usb_serials[port] = ser
             print(f"USB serial connected on port {port}")
             return True
-        except serial.SerialException as e:
+        except Exception as e:
             print(f"Failed to connect to USB serial on {port}: {e}")
             return False
     
@@ -132,11 +140,9 @@ class CommunicationManager:
                             except json.JSONDecodeError:
                                 # Message not complete yet, continue buffering
                                 pass
-                except serial.SerialException as e:
-                    print(f"Serial error on {port}: {e}")
-                    break
                 except Exception as e:
-                    print(f"Error reading from USB serial on {port}: {e}")
+                    print(f"Serial read error on {port}: {e}")
+                    break
         
         thread = threading.Thread(target=_listen, daemon=True)
         thread.start()
@@ -196,7 +202,7 @@ class CommunicationManager:
             try:
                 ser.write(message_bytes)
                 print(f"Sent game start message to USB serial on port {port}")
-            except serial.SerialException as e:
+            except Exception as e:
                 print(f"Error sending to USB serial on {port}: {e}")
     
     def get_connection_status(self) -> Dict:
