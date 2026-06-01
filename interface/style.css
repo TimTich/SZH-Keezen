@@ -480,3 +480,9 @@ body {
     display: none !important;
     pointer-events: none !important;
 }
+/* FORCEER DE SPEELKNOP NAAR DE ABSOLUTE VOORGROND */
+#speel-knop {
+    position: relative;
+    z-index: 999999 !important;
+    pointer-events: auto !important;
+}
