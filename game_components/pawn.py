@@ -5,7 +5,8 @@ class Pawn:
         self.basePosition = 80 + (int(owner) * 4) + id
         self.position = self.basePosition
         self.inPlay = False
-        self.startSpace = int(owner) * 17
+        # FIX: Aangepast van 17 naar 16 (64 vakjes / 4 spelers)
+        self.startSpace = int(owner) * 16 
         self.endZoneStart = 64 + (int(owner) * 4)
         self.entry_card_face = None
 

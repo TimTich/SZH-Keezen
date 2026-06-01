@@ -10,8 +10,9 @@ class Board:
         player_dict = {p.id: p for p in self.players}
 
         for number in range(64):
-            if number % 17 == 0:
-                expected_id = number // 17
+            # FIX: Aangepast van 17 naar 16
+            if number % 16 == 0:
+                expected_id = number // 16
                 owner = player_dict.get(expected_id, None)
                 self.spaces.append(Space(number + 1, owner))
             else:
