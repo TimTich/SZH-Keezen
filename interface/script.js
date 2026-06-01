@@ -90,10 +90,12 @@ function updateSpelerTeller(aantalSpelers) {
     }
     const speelKnop = document.getElementById('speel-knop');
     if (speelKnop) {
-        const canStart = aantalSpelers >= 2 && aantalSpelers <= 4;
-        // Alleen visueel inschakelen/uitschakelen; maak knop altijd klikbaar zodat gebruikers kunnen proberen
-        speelKnop.classList.toggle('uitgeschakeld', !canStart);
-        console.log('updateSpelerTeller', aantalSpelers, 'canStart', canStart);
+        // DIT IS DE BELANGRIJKE CHECK VOOR 2 TOT 4 SPELERS
+        if (aantalSpelers >= 2 && aantalSpelers <= 4) {
+            speelKnop.classList.remove('uitgeschakeld');
+        } else {
+            speelKnop.classList.add('uitgeschakeld');
+        }
     }
 }
 
@@ -141,14 +143,17 @@ verbindMetPi();
 // ============================================
 
 function startSpel() {
-    const speelKnop = document.getElementById('speel-knop');
-    if (speelKnop && speelKnop.disabled) {
-        alert('Het spel kan nog niet starten, er zijn nog niet genoeg spelers verbonden.');
-        return;
+    console.log("Speel-knop is ingedrukt in de browser!");
+    const knop = document.getElementById('speel-knop');
+    
+    if (knop.classList.contains('uitgeschakeld')) {
+        alert("Wacht nog even op meer spelers! Je hebt er minimaal 2 nodig.");
+        return; 
     }
-    console.log('startSpel clicked, socket state:', socket ? socket.readyState : 'nog niet verbonden');
-    // Vertel de Pi dat deze speler er klaar voor is
-    verstuurBericht({ type: "CONFIRM_START" });
+    
+    verstuurBericht({
+        type: "CONFIRM_START"
+    });
 }
 
 function tekenKaarten(hand) {
@@ -481,3 +486,16 @@ function openUitlegUI() {
 function sluitUitlegUI() {
     document.getElementById('uitleg-ui-scherm').classList.add('verborgen');
 }
+// FORCEER DE BROWSER OM NAAR DE KNOP TE LUISTEREN
+document.addEventListener('DOMContentLoaded', () => {
+    const speelKnopStart = document.getElementById('speel-knop');
+    
+    if (speelKnopStart) {
+        // Zodra er op geklikt wordt (of via tablet getikt), start het spel
+        speelKnopStart.addEventListener('click', startSpel);
+        speelKnopStart.addEventListener('touchstart', startSpel);
+        console.log("Speelknop-sensor succesvol vastgeplakt!");
+    } else {
+        console.error("Fout: Kon de speelknop in index.html niet vinden!");
+    }
+});

@@ -4,7 +4,7 @@ import random
 class Deck:
     def __init__(self, players):
         self.players = players
-        self.cards = [] # Nu netjes in de init!
+        self.cards = [] 
         self.max_cards = 0
         self.shuffle()
     

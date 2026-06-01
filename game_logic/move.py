@@ -63,7 +63,6 @@ def checkMove(board, pawn, steps):
             endZone = True
             stepsTaken = step
             
-        # FIX: De occuiedBy typo is eruit, en hij crasht nu niet meer.
         bezetter = getattr(space, 'occupied_by', None)
         if bezetter is not None and space.owner is not None:
             if int(bezetter.owner) == space.owner.id:

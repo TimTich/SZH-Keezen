@@ -7,7 +7,6 @@ class Board:
         self.fillSpaces()
     
     def fillSpaces(self):
-        # We maken een woordenboekje om spelers makkelijk op hun ID op te zoeken
         player_dict = {p.id: p for p in self.players}
 
         for number in range(64):

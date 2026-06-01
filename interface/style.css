@@ -468,3 +468,15 @@ body {
     margin-top: 20px;
     flex-shrink: 0; /* Zorgt dat de browser deze knop nóóit onzichtbaar of plat mag maken */
 }
+/* FORCEER DE SPEELKNOP NAAR DE VOORGROND */
+#speel-knop, .speel-knop {
+    position: relative !important;
+    z-index: 99999 !important; /* Zet hem boven letterlijk alles */
+    pointer-events: auto !important; /* Dwingt af dat hij altijd klikbaar is */
+}
+
+/* Zorg dat onzichtbare popups echt geen muisklikken vangen */
+.verborgen {
+    display: none !important;
+    pointer-events: none !important;
+}
