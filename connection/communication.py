@@ -9,6 +9,7 @@ class CommunicationManager:
     
     def __init__(self, event_queue: Optional[Queue] = None):
         self.websocket_clients: List = []
+        self.player_clients: Dict[int, any] = {} # type: ignore
         self.usb_serials: Dict[str, serial.Serial] = {}
         self.event_queue = event_queue
         self.usb_listener_threads: Dict[str, threading.Thread] = {}
@@ -25,6 +26,11 @@ class CommunicationManager:
         if client in self.websocket_clients:
             self.websocket_clients.remove(client)
             print(f"WebSocket client disconnected. Total clients: {len(self.websocket_clients)}")
+
+        for player_id, websocket_client in list(self.player_clients.items()):
+            if websocket_client == client:
+                del self.player_clients[player_id]
+                print(f"Unregistered player {player_id} from websocket client")
     
     def register_usb_serial(self, port: str, baudrate: int = 9600) -> bool:
         """Register a USB serial connection"""
@@ -54,10 +60,36 @@ class CommunicationManager:
         """Set or update the event queue for incoming messages"""
         self.event_queue = event_queue
     
+    def _assign_player_id(self):
+        """Assign the next available player ID based on join order."""
+        for candidate in range(4):
+            if candidate not in self.player_clients:
+                return candidate
+        return None
+
     async def listen_websocket_message(self, client, message: str):
         """Handle incoming WebSocket message and add to event queue"""
         try:
             event = json.loads(message)
+            if event.get("type") == "PLAYER_JOIN":
+                assigned_id = self._assign_player_id()
+                if assigned_id is None:
+                    error_message = {
+                        "type": "PLAYER_ASSIGNMENT_FAILED",
+                        "reason": "Maximum number of players reached"
+                    }
+                    await client.send(json.dumps(error_message))
+                    print("Rejected PLAYER_JOIN because maximum players are already connected")
+                    return
+
+                event["player_id"] = assigned_id
+                self.player_clients[assigned_id] = client
+                print(f"Registered player {assigned_id} to websocket client")
+                await client.send(json.dumps({
+                    "type": "PLAYER_ASSIGNED",
+                    "player_id": assigned_id
+                }))
+
             if self.event_queue:
                 self.event_queue.put(event)
                 print(f"Added WebSocket event to queue: {event['type']}")
@@ -125,20 +157,37 @@ class CommunicationManager:
             "status": "GAME_STARTED"
         }
         
-        # Send to WebSocket clients
+        # Debug: show connected clients and player mapping
+        try:
+            print(f"DEBUG: Broadcasting GAME_START. websocket_clients={len(self.websocket_clients)}, player_clients={list(self.player_clients.keys())}")
+        except Exception:
+            pass
+
+        # First, send directly to registered player websocket clients (per-player)
+        if self.player_clients:
+            for pid, client in list(self.player_clients.items()):
+                try:
+                    await client.send(json.dumps(message))
+                    print(f"Sent GAME_START to player {pid}")
+                except Exception as e:
+                    print(f"Error sending GAME_START to player {pid}: {e}")
+
+        # Also broadcast to any remaining websocket clients (fallback)
         await self._broadcast_websocket(message)
         
         # Send to USB serials
         self._broadcast_usb_serial(message)
 
-    async def broadcast_turn_end(self, pawn):
+    async def broadcast_turn_end(self, player):
         """Broadcast turn end message to all connected WebSocket clients and USB serials"""
         message = {
             "type": "TURN_END",
             "status": "TURN_ENDED",
-            "player_id": pawn.player_id,
-            "pawn": pawn,
-            "space": pawn.position
+            "player_id": player.player_id,
+            "pawn 1": player.pawns[0].position,
+            "pawn 2": player.pawns[1].position,
+            "pawn 3": player.pawns[2].position,
+            "pawn 4": player.pawns[3].position
         }
         
         # Send to WebSocket clients
@@ -146,6 +195,32 @@ class CommunicationManager:
         
         # Send to USB serials
         self._broadcast_usb_serial(message)
+
+    async def broadcast_hand(self, player_id, cards):
+        """Broadcast dealt hand to a specific player"""
+        # Convert card objects to their face values (strings)
+        card_faces = [card.face for card in cards]
+        
+        message = {
+            "type": "NIEUWE_HAND",
+            "kaarten": card_faces
+        }
+        
+        print(f"DEBUG: Trying to send hand to player {player_id}")
+        print(f"DEBUG: Available players in player_clients: {list(self.player_clients.keys())}")
+        
+        message_json = json.dumps(message)
+        if player_id in self.player_clients:
+            try:
+                await self.player_clients[player_id].send(message_json)
+                print(f"Sent hand to player {player_id}: {card_faces}")
+                return
+            except Exception as e:
+                print(f"Error sending hand to player {player_id}: {e}")
+
+        print(f"Warning: Player {player_id} not found in player_clients. Falling back to broadcast to all connected websockets.")
+        await self._broadcast_websocket(message)
+    
     
     async def _broadcast_websocket(self, message: Dict):
         """Send message to all connected WebSocket clients"""
@@ -153,13 +228,13 @@ class CommunicationManager:
             print("No WebSocket clients connected")
             return
         
-        message_json = json.dumps(message).encode('utf-8')
+        message_json = json.dumps(message)  # Send as string, not bytes
         disconnected_clients = []
         
         for client in self.websocket_clients:
             try:
                 await client.send(message_json)
-                print(f"Sent game start message to WebSocket client")
+                print(f"Sent message to WebSocket client: {message['type']}")
             except Exception as e:
                 print(f"Error sending to WebSocket client: {e}")
                 disconnected_clients.append(client)

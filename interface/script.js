@@ -1,13 +1,12 @@
+console.log('Interface script loaded');
 // ============================================
 // COMMUNICATIE MET DE RASPBERRY PI
 // ============================================
-// Let op: als je de interface straks op een los tablet opent, 
-// verander 'localhost' dan naar het IP-adres van je Raspberry Pi!
-const piAddress = "ws://192.168.1.50:8765";
+// We verbinden met de server op dezelfde host als de pagina.
+const piAddress = `ws://${window.location.hostname}:8765`;
 let socket;
-// Vraagt bij het openen van de pagina welk speler-nummer je bent
-let invoer = prompt("Welke speler ben je? (Vul in: 0, 1, 2 of 3)", "0");
-let spelerId = parseInt(invoer);
+// Het server-side systeem wijst een speler-ID toe op basis van join-orde.
+let spelerId;
 
 function verbindMetPi() {
     socket = new WebSocket(piAddress);
@@ -16,32 +15,51 @@ function verbindMetPi() {
         console.log("Verbonden met de Raspberry Pi!");
         // We melden ons direct aan bij de Pi
         verstuurBericht({
-            type: "PLAYER_JOIN",
-            player_id: spelerId
+            type: "PLAYER_JOIN"
         });
     };
 
     socket.onmessage = function(event) {
-        const data = JSON.parse(event.data);
-        console.log("Bericht van Pi:", data);
+        try {
+            const data = JSON.parse(event.data);
+            console.log("Bericht van Pi:", data);
 
-        // De Pi bepaalt wat wij op het scherm moeten doen
-        if (data.type === "GAME_START") {
-            document.getElementById('start-scherm').classList.add('verborgen');
-            document.getElementById('spel-scherm').classList.remove('verborgen');
-        } 
-        else if (data.type === "NIEUWE_HAND") {
-            tekenKaarten(data.kaarten); // Tekent de 4 of 5 nieuwe kaarten
-        }
-        else if (data.type === "UPDATE_BORD") {
-            updatePionPosities(data.pionnen); // Past de cijfertjes op de pionnen aan
-        }
-        else if (data.type === "FOUT_ZET") {
-            alert(data.bericht); // Laat de waarschuwing van de Pi zien
-            // Haal de groene randjes weg zodat de speler opnieuw kan kiezen
-            document.querySelectorAll('.speelkaart-wrapper.geselecteerd').forEach(w => w.classList.remove('geselecteerd'));
-            document.querySelectorAll('.pion.geselecteerd').forEach(p => p.classList.remove('geselecteerd'));
-            checkSelecties();
+            // De Pi bepaalt wat wij op het scherm moeten doen
+            if (data.type === "PLAYER_ASSIGNED") {
+                spelerId = data.player_id;
+                console.log(`Speler-ID toegewezen: ${spelerId}`);
+                return;
+            }
+
+            if (data.type === "GAME_START" || data.type === "NIEUWE_HAND") {
+                console.log(`Ontvangen event ${data.type}, tonen spel scherm`);
+                const startScherm = document.getElementById('start-scherm');
+                const spelScherm = document.getElementById('spel-scherm');
+                if (startScherm) {
+                    startScherm.classList.add('verborgen');
+                    startScherm.style.display = 'none';
+                }
+                if (spelScherm) {
+                    spelScherm.classList.remove('verborgen');
+                    spelScherm.style.display = 'block';
+                }
+            }
+
+            if (data.type === "NIEUWE_HAND") {
+                tekenKaarten(data.kaarten); // Tekent de 4 of 5 nieuwe kaarten
+            }
+            else if (data.type === "UPDATE_BORD") {
+                updatePionPosities(data.pionnen); // Past de cijfertjes op de pionnen aan
+            }
+            else if (data.type === "FOUT_ZET") {
+                alert(data.bericht); // Laat de waarschuwing van de Pi zien
+                // Haal de groene randjes weg zodat de speler opnieuw kan kiezen
+                document.querySelectorAll('.speelkaart-wrapper.geselecteerd').forEach(w => w.classList.remove('geselecteerd'));
+                document.querySelectorAll('.pion.geselecteerd').forEach(p => p.classList.remove('geselecteerd'));
+                checkSelecties();
+            }
+        } catch (err) {
+            console.error('Fout tijdens verwerken van onmessage:', err, event.data);
         }
     };
 
@@ -171,6 +189,11 @@ function speelZet() {
     const kaartElement = document.querySelector('.speelkaart-wrapper.geselecteerd img');
     if (!kaartElement) return;
 
+    if (spelerId === undefined) {
+        console.warn('Speler-ID nog niet toegewezen, actie wordt niet verzonden.');
+        return;
+    }
+
     const geselecteerdeKaart = kaartElement.alt; // Bijv. "A", "7", of "4"
 
     if (geselecteerdeKaart === '7') {
@@ -198,6 +221,11 @@ function bevestig7Zet() {
     const pionnen = document.querySelectorAll('.pion.geselecteerd');
     const geselecteerdeKaart = document.querySelector('.speelkaart-wrapper.geselecteerd img').alt;
 
+    if (spelerId === undefined) {
+        console.warn('Speler-ID nog niet toegewezen, actie wordt niet verzonden.');
+        return;
+    }
+
     if(pionnen.length === 2) {
         const pion1Id = parseInt(pionnen[0].dataset.id.replace('pion-', '')) - 1;
         const pion2Id = parseInt(pionnen[1].dataset.id.replace('pion-', '')) - 1;
@@ -220,6 +248,11 @@ function bevestigBoerZet() {
     const eigenPion = document.querySelector('.pion.geselecteerd');
     const vijandigePion = document.querySelector('.boer-wrapper.geselecteerd-boer'); 
     const geselecteerdeKaart = document.querySelector('.speelkaart-wrapper.geselecteerd img').alt;
+
+    if (spelerId === undefined) {
+        console.warn('Speler-ID nog niet toegewezen, actie wordt niet verzonden.');
+        return;
+    }
 
     if (eigenPion && vijandigePion) {
         const pionId = parseInt(eigenPion.dataset.id.replace('pion-', '')) - 1;

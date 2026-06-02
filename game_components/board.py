@@ -8,10 +8,11 @@ class Board:
     def __init__(self, players):
         self.players = players
         self.fillSpaces()
+        self.deck = Deck(players)
     
     def fillSpaces(self):
         for number in range(64):
-            if number % 17 == 0:
+            if number % 17 == 0 and number // 17 < len(self.players):
                 self.spaces.append(Space(number + 1, self.players[number // 17]))
             else:
                 self.spaces.append(Space(number + 1))

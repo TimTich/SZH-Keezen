@@ -1,5 +1,6 @@
 import asyncio
 import queue
+import threading
 from connection.communication import CommunicationManager
 from connection.websocket import start_websocket_server
 from game_logic import game_loop
@@ -16,9 +17,11 @@ async def main():
     # Start WebSocket server
     websocket_task = asyncio.create_task(start_websocket_server(comm_manager))
  
-    # Start game loop in a separate thread (or use async version)
-    gameManager = GameManager(communication_manager=comm_manager)
+    # Start game loop in a separate thread so queued events are processed
+    loop = asyncio.get_event_loop()
+    gameManager = GameManager(communication_manager=comm_manager, event_loop=loop)
     gameLoop = game_loop.GameLoop(gameManager, event_queue)
+    threading.Thread(target=gameLoop.start, daemon=True).start()
 
     await websocket_task
 
