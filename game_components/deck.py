@@ -9,6 +9,7 @@ class Deck:
         self.shuffle()
     
     def shuffle(self):
+        self.cards = [] # Verwijder oude kaarten voor de zekerheid
         self.addCards()
         random.shuffle(self.cards)
     
@@ -18,8 +19,7 @@ class Deck:
                 self.cards.append(Card(face))
         self.max_cards = len(self.cards)
 
-    def dealCards(self):
-        amount = 5 if self.max_cards == len(self.cards) else 4
+    def dealCards(self, amount):
         for _ in range(amount):
             for player in self.players:
                 if self.cards:

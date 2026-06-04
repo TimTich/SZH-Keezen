@@ -60,15 +60,12 @@ class GameManager:
         if 64 <= pawn.position <= 79:
             stap = (pawn.position % 4) + 1
             return f"E{stap}"
-        # We tellen er 1 bij op zodat vakje 0 op het scherm vakje 1 wordt
         return str(pawn.position + 1)
 
     def broadcast_game_state(self):
-        # FIX: Stuur elke speler specifiek de status van HUN EIGEN 4 pionnen!
         for player in self.players:
             pionnen_status = {}
             for i, pawn in enumerate(player.pawns):
-                # In de HTML heten ze voor de speler altijd pion-1 t/m pion-4
                 pion_id_naam = f"pion-{i + 1}"
                 pionnen_status[pion_id_naam] = self.format_pawn_label(pawn)
             
@@ -85,13 +82,20 @@ class GameManager:
         if self.game_started or len(self.players) < 2: return
         
         self.players.sort(key=lambda player: player.id)
-        starting_player_id = 0 if any(player.id == 0 for player in self.players) else self.players[0].id
-        self.current_player_index = next((index for index, player in enumerate(self.players) if player.id == starting_player_id), 0)
+        
+        self.grand_round = 1
+        self.sub_round = 1
+        self.starting_player_index = 0
+        self.current_player_index = self.starting_player_index
         
         self.game_started = True
         self.board = Board(self.players)
         self.deck = Deck(self.players)
-        self.deck.dealCards()
+        
+        for p in self.players:
+            p.cards = []
+            
+        self.deck.dealCards(5)
 
         self._create_async_task(self.comm._broadcast_websocket({"type": "GAME_START", "status": "GAME_STARTED"}))
         self._create_async_task(self.broadcast_current_player())
@@ -111,16 +115,27 @@ class GameManager:
         if player is None or pawn_id is None or pawn_id < 0 or pawn_id >= len(player.pawns): return
 
         pawn = player.pawns[pawn_id]
-        pawn2 = player.pawns[pawn2_id] if pawn2_id is not None and 0 <= pawn2_id < len(player.pawns) else None
+        
+        # FIX VOOR DE BOER CRASH: We negeren teksten zoals "TBD_VIJAND_ID"
+        pawn2 = None
+        if pawn2_id is not None:
+            try:
+                p2_id_int = int(pawn2_id)
+                if 0 <= p2_id_int < len(player.pawns):
+                    pawn2 = player.pawns[p2_id_int]
+            except (ValueError, TypeError):
+                pass # Negeer foute teksten veilig
+
         card = Card(card_data["face"])
         
         if not pawn.inPlay and card.face not in ("A", "K"):
             has_ace_or_king = any(c.face in ("A", "K") for c in player.cards)
             if not has_ace_or_king:
+                card_to_remove = next((c for c in player.cards if c.face == card.face), None)
+                if card_to_remove: player.cards.remove(card_to_remove)
+                
                 self._create_async_task(self.comm.send_player_message(player_id, {"type": "MOVE_SUCCEEDED"}))
-                self.current_player_index = (self.current_player_index + 1) % len(self.players)
-                self._create_async_task(self.broadcast_current_player())
-                self.broadcast_game_state()
+                self.endTurn()
                 return
             else:
                 self._create_async_task(self.comm.send_player_message(player_id, {"type": "FOUT_ZET", "bericht": "Je moet eerst een Aas of Koning spelen."}))
@@ -132,7 +147,27 @@ class GameManager:
             self._create_async_task(self.comm.send_player_message(player_id, {"type": "FOUT_ZET", "bericht": "Ongeldige zet."}))
             return
 
+        card_to_remove = next((c for c in player.cards if c.face == card.face), None)
+        if card_to_remove: player.cards.remove(card_to_remove)
+
         self._create_async_task(self.comm.send_player_message(player_id, {"type": "MOVE_SUCCEEDED"}))
-        self.current_player_index = (self.current_player_index + 1) % len(self.players)
+        self.endTurn()
+
+    def endTurn(self):
+        if all(len(p.cards) == 0 for p in self.players):
+            self.sub_round += 1
+            if self.sub_round > 3:
+                self.sub_round = 1
+                self.grand_round += 1
+                self.starting_player_index = (self.starting_player_index + 1) % len(self.players)
+                self.deck.shuffle()
+            
+            deal_amount = 5 if self.sub_round == 1 else 4
+            self.deck.dealCards(deal_amount)
+            self.current_player_index = self.starting_player_index
+            self.broadcast_hands()
+        else:
+            self.current_player_index = (self.current_player_index + 1) % len(self.players)
+            
         self._create_async_task(self.broadcast_current_player())
         self.broadcast_game_state()

@@ -1,11 +1,11 @@
 def movePawn(board, card, pawn, pawn2=None, movePawn2=None):
     if card.face == "7" and pawn2 and movePawn2:
         return splitSeven(board, pawn, pawn2, movePawn2)
-    elif card.face == "J" and pawn and pawn2:
-        return switch(board, pawn, pawn2)
+    # FIX: Tijdelijke bypass voor de Boer. De zet slaagt, de kaart gaat weg, maar pionnen blijven staan.
+    elif card.face == "J":
+        return True 
     elif (card.face == "K" or card.face == "A") and (not pawn.inPlay):
         return enterPlay(board, pawn, card.face)
-    # FIX: We hebben hier ingesteld dat een Koning ook op het veld gespeeld mag worden
     elif card.face != "J" and pawn.inPlay:
         steps = getSteps(card)
         return moveOnePawn(board, steps, pawn)
@@ -18,7 +18,6 @@ def enterPlay(board, pawn, card_face=None):
     
     bezetter = getattr(dest_space, 'occupied_by', None)
     if bezetter is not None:
-        # Dit is de Keezen regel die je voordeur blokkeert als je er zelf op staat
         if int(bezetter.owner) == int(pawn.owner):
             return False 
         else:
@@ -86,7 +85,6 @@ def voer_zet_uit(board, pawn, doel_index):
     pawn.position = doel_index
 
 def bereken_route(board, pawn, steps):
-    # Als je 0 stappen loopt (met de Koning), hoef je de route niet te checken
     if steps == 0:
         return True, pawn.position
 
@@ -114,25 +112,22 @@ def bereken_route(board, pawn, steps):
     
     for step in range(steps):
         if not is_endzone:
-            volgende_pos = (huidige_pos + 1) % 64
-            space = board.spaces[volgende_pos]
-            
             afslag_index = (pawn.startSpace - 1) % 64
             if huidige_pos == afslag_index:
                 is_endzone = True
                 huidige_pos = pawn.endZoneStart
                 endzone_stap = 0
-                space = board.spaces[huidige_pos]
             else:
-                huidige_pos = volgende_pos
+                huidige_pos = (huidige_pos + 1) % 64
         else:
             endzone_stap += 1
             huidige_pos = pawn.endZoneStart + endzone_stap
             if endzone_stap > 3:
                 return False, None
-            space = board.spaces[huidige_pos]
-
+                
+        space = board.spaces[huidige_pos]
         bezetter = getattr(space, 'occupied_by', None)
+        
         if bezetter is not None:
             if space.owner is not None and int(bezetter.owner) == space.owner.id:
                 return False, None
@@ -147,14 +142,8 @@ def bereken_route(board, pawn, steps):
     return True, huidige_pos
 
 def getSteps(card):
-    if (card.face == "4"):
-        return -4
-    elif (card.face == "A"):
-        return 1
-    elif (card.face == "Q"):
-        return 13
-    # FIX: De Koning telt nu officieel als 0 stappen op het speelveld!
-    elif (card.face == "K"):
-        return 0
-    else:
-        return int(card.face)
+    if (card.face == "4"): return -4
+    elif (card.face == "A"): return 1
+    elif (card.face == "Q"): return 13
+    elif (card.face == "K"): return 0
+    else: return int(card.face)
