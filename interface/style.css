@@ -486,3 +486,30 @@ body {
     z-index: 999999 !important;
     pointer-events: auto !important;
 }
+/* ============================================
+   PION LABELS (POSITIES: B, E1, 1-64)
+   ============================================ */
+
+.pos-label {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%); /* Zorgt dat het getal exact in het midden gecentreerd is */
+    font-size: 34px; /* Maakt de tekst goed leesbaar, pas aan indien nodig */
+    font-weight: 900;
+    color: black;
+    white-space: nowrap; /* Zorgt dat labels zoals 'E3' niet afbreken */
+}
+
+/* Bovenste twee pionnen: Label eronder */
+.pion-links-boven .pos-label,
+.pion-rechts-boven .pos-label {
+    bottom: -42px; /* Duwt de tekst onder het grijze pion-vakje */
+    top: auto;
+}
+
+/* Onderste twee pionnen: Label erboven */
+.pion-links-onder .pos-label,
+.pion-rechts-onder .pos-label {
+    top: -42px; /* Duwt de tekst boven het grijze pion-vakje */
+    bottom: auto;
+}
