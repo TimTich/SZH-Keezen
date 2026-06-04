@@ -25,13 +25,29 @@ class GameManager:
     def handleEvent(self, event):
         t = event["type"]
         if t == "PLAYER_JOIN" and not self.game_started:
-            player_id = event["player_id"]
+            player_id = event.get("player_id")
             existing_ids = {p.id for p in self.players}
+            
+            # NIEUW: Automatisch een stoel uitdelen als speler_id "null" is (nieuwe speler)
+            if player_id is None:
+                free_id = next((i for i in range(4) if i not in existing_ids), None)
+                if free_id is None:
+                    print("❌ Lobby is vol, nieuwe speler geweigerd.")
+                    return
+                player_id = free_id
             
             if player_id not in existing_ids:
                 self.players.append(Player("player" + str(player_id), player_id))
+            
             if event.get("_websocket"):
                 self.comm.register_websocket_player(event["_websocket"], player_id)
+                
+                # Stuur DIRECT de definitieve spelers-ID terug naar de browser!
+                self._create_async_task(self.comm.send_player_message(player_id, {
+                    "type": "ASSIGNED_PLAYER_ID",
+                    "player_id": player_id
+                }))
+                
             self._create_async_task(self.broadcast_player_count())
 
         elif t == "CONFIRM_START":
@@ -116,7 +132,6 @@ class GameManager:
 
         pawn = player.pawns[pawn_id]
         
-        # FIX VOOR DE BOER CRASH: We negeren teksten zoals "TBD_VIJAND_ID"
         pawn2 = None
         if pawn2_id is not None:
             try:
@@ -124,7 +139,7 @@ class GameManager:
                 if 0 <= p2_id_int < len(player.pawns):
                     pawn2 = player.pawns[p2_id_int]
             except (ValueError, TypeError):
-                pass # Negeer foute teksten veilig
+                pass 
 
         card = Card(card_data["face"])
         

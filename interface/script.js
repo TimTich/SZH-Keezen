@@ -6,12 +6,15 @@ const piAddress = `ws://${hostName}:8765`;
 let socket;
 let huidigeSpeler = 0;
 
-let invoer = prompt("Welke speler ben je? (Vul in: 0, 1, 2 of 3)", "0");
-let spelerId = parseInt(invoer);
-if (isNaN(spelerId) || spelerId < 0 || spelerId > 3) {
-    spelerId = 0;
+let opgeslagenId = sessionStorage.getItem('keezenSpelerId');
+let spelerId = opgeslagenId !== null ? parseInt(opgeslagenId) : null;
+
+if (spelerId !== null) {
+    updateJouwSpeler(spelerId);
+} else {
+    const jouwSpelerElement = document.getElementById('jouw-speler');
+    if (jouwSpelerElement) jouwSpelerElement.textContent = `Aanmelden...`;
 }
-updateJouwSpeler(spelerId);
 
 function verbindMetPi() {
     socket = new WebSocket(piAddress);
@@ -37,6 +40,7 @@ function verbindMetPi() {
         }
         else if (data.type === "ASSIGNED_PLAYER_ID") {
             spelerId = data.player_id;
+            sessionStorage.setItem('keezenSpelerId', spelerId); 
             updateJouwSpeler(spelerId);
             updateBeurtStatus();
         }
@@ -83,7 +87,6 @@ function updateSpelerTeller(aantalSpelers) {
     if (speelKnop) {
         if (aantalSpelers >= 2 && aantalSpelers <= 4) {
             speelKnop.classList.remove('uitgeschakeld');
-            // DIT FORCEERT DAT HIJ ALTIJD KLIKBAAR IS, ONGEACHT WAT CSS DOET:
             speelKnop.style.pointerEvents = 'auto'; 
             speelKnop.style.cursor = 'pointer';
         } else {
@@ -97,7 +100,8 @@ function updateHuidigeBeurt(playerId) {
     huidigeSpeler = playerId;
     const beurtElement = document.getElementById('huidige-beurt');
     if (beurtElement) {
-        beurtElement.textContent = `HUIDIGE BEURT: speler ${playerId}`;
+        // VISUELE FIX: +1 voor de menselijke speler
+        beurtElement.textContent = `HUIDIGE BEURT: speler ${playerId + 1}`;
     }
     updateBeurtStatus();
 }
@@ -113,15 +117,19 @@ function updateBeurtStatus() {
         }
     }
     if (jouwSpelerGameElement) {
-        jouwSpelerGameElement.textContent = spelerId === huidigeSpeler ? `Jij bent speler ${spelerId} (jouw beurt)` : `Jij bent speler ${spelerId}`;
+        // VISUELE FIX: +1 voor de menselijke speler
+        const weergaveId = spelerId + 1;
+        jouwSpelerGameElement.textContent = spelerId === huidigeSpeler ? `Jij bent speler ${weergaveId} (jouw beurt)` : `Jij bent speler ${weergaveId}`;
     }
 }
 
 function updateJouwSpeler(playerId) {
+    // VISUELE FIX: +1 voor de menselijke speler
+    const weergaveId = playerId + 1;
     const jouwSpelerElement = document.getElementById('jouw-speler');
-    if (jouwSpelerElement) jouwSpelerElement.textContent = `Jij bent speler ${playerId}`;
+    if (jouwSpelerElement) jouwSpelerElement.textContent = `Jij bent speler ${weergaveId}`;
     const jouwSpelerGameElement = document.getElementById('jouw-speler-game');
-    if (jouwSpelerGameElement) jouwSpelerGameElement.textContent = `Jij bent speler ${playerId}`;
+    if (jouwSpelerGameElement) jouwSpelerGameElement.textContent = `Jij bent speler ${weergaveId}`;
 }
 
 verbindMetPi();
@@ -130,15 +138,9 @@ verbindMetPi();
 // UI LOGICA (VISUELE KANT & KLIKKEN)
 // ============================================
 
-// GLOBALE FUNCTIE VOOR DE KNOP
 window.startSpel = function() {
-    console.log("2. 🚀 JS FUNCTIE GESTART!");
     const knop = document.getElementById('speel-knop');
-    if (knop && knop.classList.contains('uitgeschakeld')) {
-        console.log("3. ❌ KNOP IS NOG UITGESCHAKELD");
-        return; 
-    }
-    console.log("3. ✅ BERICHT WORDT NAAR PI GESTUURD!");
+    if (knop && knop.classList.contains('uitgeschakeld')) return; 
     verstuurBericht({ type: "CONFIRM_START" });
 };
 
@@ -189,7 +191,7 @@ function updatePionPosities(pionnenData) {
 
 function selecteerKaart(el) {
     if (spelerId !== huidigeSpeler) {
-        alert(`Wacht op jouw beurt. Het is nu beurt van speler ${huidigeSpeler}.`);
+        alert(`Wacht op jouw beurt. Het is nu de beurt van speler ${huidigeSpeler + 1}.`);
         return;
     }
 
@@ -208,7 +210,7 @@ function selecteerKaart(el) {
 
 function selecteerPion(el) {
     if (spelerId !== huidigeSpeler) {
-        alert(`Wacht op jouw beurt. Het is nu beurt van speler ${huidigeSpeler}.`);
+        alert(`Wacht op jouw beurt. Het is nu de beurt van speler ${huidigeSpeler + 1}.`);
         return;
     }
 
@@ -253,10 +255,6 @@ function checkSelecties() {
     }
 }
 
-// ============================================
-// ZETTEN DOORSTUREN NAAR DE PI
-// ============================================
-
 function speelZet() {
     if (spelerId !== huidigeSpeler) return;
 
@@ -284,7 +282,6 @@ function speelZet() {
 
 function bevestig7Zet() { 
     if (spelerId !== huidigeSpeler) return;
-
     const pionnen = document.querySelectorAll('.pion.geselecteerd');
     const geselecteerdeKaart = document.querySelector('.speelkaart-wrapper.geselecteerd img').alt;
 
@@ -300,14 +297,12 @@ function bevestig7Zet() {
             pion2_id: pion2Id,
             movePawn2: stappenPionOnder
         });
-
         document.getElementById('popup-7').classList.add('verborgen'); 
     }
 }
 
 function bevestigBoerZet() { 
     if (spelerId !== huidigeSpeler) return;
-
     const eigenPion = document.querySelector('.pion.geselecteerd');
     const vijandigePion = document.querySelector('.boer-wrapper.geselecteerd-boer'); 
     const geselecteerdeKaart = document.querySelector('.speelkaart-wrapper.geselecteerd img').alt;
@@ -322,7 +317,6 @@ function bevestigBoerZet() {
             pion_id: pionId,
             pion2_id: "TBD_VIJAND_ID"
         });
-
         document.getElementById('popup-boer').classList.add('verborgen'); 
     }
 }
@@ -353,10 +347,6 @@ function draaiAlleKaartenOm() {
     updateInstructie();
     checkSelecties();
 }
-
-// ============================================
-// POP-UP LOGICA (Verdeel-schermpjes)
-// ============================================
 
 let stappenPionBoven = 0; 
 let stappenPionOnder = 0;
@@ -446,18 +436,14 @@ function stopSpel() {
     document.getElementById('start-scherm').classList.remove('verborgen');
 }
 
-function openUitlegKeezen() {
-    document.getElementById('uitleg-keezen-scherm').classList.remove('verborgen');
-}
+function openUitlegKeezen() { document.getElementById('uitleg-keezen-scherm').classList.remove('verborgen'); }
+function sluitUitlegKeezen() { document.getElementById('uitleg-keezen-scherm').classList.add('verborgen'); }
+function openUitlegUI() { document.getElementById('uitleg-ui-scherm').classList.remove('verborgen'); }
+function sluitUitlegUI() { document.getElementById('uitleg-ui-scherm').classList.add('verborgen'); }
 
-function sluitUitlegKeezen() {
-    document.getElementById('uitleg-keezen-scherm').classList.add('verborgen');
-}
-
-function openUitlegUI() {
-    document.getElementById('uitleg-ui-scherm').classList.remove('verborgen');
-}
-
-function sluitUitlegUI() {
-    document.getElementById('uitleg-ui-scherm').classList.add('verborgen');
-}
+document.addEventListener('DOMContentLoaded', () => {
+    const speelKnopStart = document.getElementById('speel-knop');
+    if (speelKnopStart) {
+        speelKnopStart.addEventListener('click', startSpel);
+    }
+});
