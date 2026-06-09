@@ -1,3 +1,7 @@
+/* ============================================
+   KEEZEN SYSTEM STYLE HUB - FULL INTEGRATION
+   ============================================ */
+
 /* Reset */
 * {
     box-sizing: border-box;
@@ -59,6 +63,7 @@ body {
     box-shadow: 0 0 25px rgba(76, 175, 80, 0.6);
 }
 
+/* --- PION LABELS (CENTREER FIX) --- */
 .pos-label {
     position: absolute;
     left: 50%;
@@ -68,6 +73,7 @@ body {
     color: black;
     white-space: nowrap; 
     pointer-events: none;
+    text-shadow: 0 0 8px rgba(255,255,255,0.6);
 }
 
 .pion-links-boven { top: 30px; left: 30px; }
@@ -217,12 +223,12 @@ body {
     border: none;
     border-radius: 10px;
     cursor: pointer;
-    pointer-events: auto; /* Belangrijk voor klikbaarheid */
+    pointer-events: auto !important;
 }
 
-/* ============================================
-   NIEUWE ACTIE KNOPPEN CONTAINER (SPEEL & GOOI WEG)
-   ============================================ */
+/* =======================================================
+   NIEUWE ACTIE KNOPPEN CONTAINER (SPEEL & GOOI WEG FIX)
+   ======================================================= */
 .actie-knoppen-rij {
     position: absolute;
     bottom: 12%; 
@@ -232,9 +238,9 @@ body {
     justify-content: center;
     gap: 30px;
     align-items: center;
-    width: fit-content; /* DE FIX 1: Krimpt strak om de knoppen heen */
+    width: fit-content; /* Krimpt strak om de knoppen heen zodat de hoeken vrij blijven */
     z-index: 1000;
-    pointer-events: none; /* DE FIX 2: Zorgt dat het onzichtbare vlak geen muiskliks steelt! */
+    pointer-events: none; /* Kliks vallen dwars door de lege container heen naar de pionnen! */
 }
 
 .actie-knop {
@@ -250,10 +256,10 @@ body {
     box-shadow: 0 10px 20px rgba(0,0,0,0.4);
     transition: transform 0.2s, background 0.2s, box-shadow 0.2s;
     font-family: 'Arial Black', sans-serif;
-    pointer-events: auto; /* DE FIX 3: Maakt de knoppen zélf weer indrukbaar */
+    pointer-events: auto; /* Maakt de knoppen zelf uiteraard wél weer klikbaar */
 }
 
-/* UITGESCHAKELDE STATUS VOOR BEIDE KNOPPEN */
+/* Uitgeschakelde knop-status */
 .actie-knop.uitgeschakeld {
     background: #333 !important;
     border-color: #555 !important;
@@ -265,7 +271,6 @@ body {
     transform: none !important;
 }
 
-/* STYLING VOOR DE RODE SPEEL KNOP */
 #bevestig-knop:not(.uitgeschakeld) { 
     background: linear-gradient(to bottom, #f60a0a, #8b0000); 
 }
@@ -275,7 +280,6 @@ body {
     box-shadow: 0 15px 30px rgba(255,0,0,0.4);
 }
 
-/* STYLING VOOR DE GRIJZE GOOI-WEG KNOP */
 #weggooi-knop:not(.uitgeschakeld) { 
     background: #555555; 
 }
@@ -284,7 +288,7 @@ body {
     transform: scale(1.05);
 }
 
-/* --- POP-UP ALGEMEEN --- */
+/* --- POP-UP ALGEMEEN (FULL OVERLAY FORCE) --- */
 .popup-overlay {
     position: fixed !important;
     top: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh !important;
@@ -344,7 +348,7 @@ body {
     border-bottom: 5px solid black; 
 }
 .popup-pion-vak {
-    width: 200px; 
+    width: 250px; /* Iets verbreed voor de dubbele labels */
     border-right: 5px solid black;
     display: flex;
     justify-content: center;
@@ -352,8 +356,8 @@ body {
     background-color: #e0e0e0;
 }
 .popup-pion-img {
-    width: 100px; 
-    height: 100px;
+    width: 90px; 
+    height: 90px;
     object-fit: contain;
 }
 .popup-stappen-vak {
@@ -374,40 +378,47 @@ body {
     transform: scale(1.15) translateY(-5px);
 }
 
-/* --- STYLING SPECIFIEK VOOR DE BOER --- */
+/* --- DYNAMISCHE BOER LAYOUT (NO SCROLL GRID) --- */
 .boer-content {
-    max-width: 800px;
-    width: 90%;
+    max-width: 1000px;
+    width: 95%;
 }
 #boer-tegenstanders-container {
     display: flex;
-    flex-direction: column;
+    flex-direction: row; /* Zet alle tegenstanders netjes naast elkaar */
+    justify-content: center;
     gap: 15px;
     margin: 20px 0;
-    max-height: 50vh;
-    overflow-y: auto;
 }
 .boer-speler-rij {
     background-color: rgba(0,0,0,0.1);
     padding: 15px;
     border-radius: 10px;
+    flex: 1; 
+    min-width: 220px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 .boer-speler-titel {
     margin-top: 0;
-    margin-bottom: 10px;
-    font-size: 20px;
-    text-align: left;
+    margin-bottom: 15px;
+    font-size: 22px;
+    text-align: center;
+    color: black;
 }
 .boer-pionnen-container {
-    display: flex;
-    justify-content: space-around;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* Compact 2x2 grid voorkomt scrollen */
+    gap: 15px;
+    justify-items: center;
 }
 .boer-wrapper {
     display: flex;
     flex-direction: column;
     align-items: center;
     cursor: pointer;
-    padding: 10px;
+    padding: 5px;
     border-radius: 10px;
     transition: 0.2s;
 }
@@ -424,8 +435,14 @@ body {
 }
 .boer-label {
     font-weight: bold;
-    font-size: 18px;
+    font-size: 16px;
     margin-bottom: 5px;
+    color: black;
+}
+.boer-pion-icoon {
+    width: 50px;
+    height: 75px;
+    transition: transform 0.2s ease;
 }
 
 /* =======================================================
@@ -508,4 +525,34 @@ body {
     padding: 15px 100px;
     margin-top: 20px;
     flex-shrink: 0; 
+}
+
+/* =======================================================
+   --- GIGANTISCH WIN SCHERM (THEATRAAL EN GEANIMEERD) --- 
+   ======================================================= */
+#win-scherm {
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background-color: rgba(0, 0, 0, 0.93);
+    color: #ffd700;
+    z-index: 999999999; 
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.win-titel {
+    font-size: 6.5rem;
+    text-shadow: 0 0 40px #ffcc00, 2px 2px 10px #000;
+    margin-bottom: 20px;
+    text-transform: uppercase;
+    font-family: 'Arial Black', sans-serif;
+    animation: winPulse 2s infinite ease-in-out;
+}
+
+@keyframes winPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.06); text-shadow: 0 0 65px #ffcc00, 4px 4px 15px #000; }
+    100% { transform: scale(1); }
 }

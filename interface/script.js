@@ -67,6 +67,23 @@ function verbindMetPi() {
             document.querySelectorAll('.pion.geselecteerd').forEach(p => p.classList.remove('geselecteerd'));
             checkSelecties();
         }
+        // NIEUW: De Win Activering!
+        else if (data.type === "GAME_WON") {
+            document.getElementById('spel-scherm').classList.add('verborgen');
+            const winScherm = document.getElementById('win-scherm');
+            winScherm.classList.remove('verborgen');
+            
+            const subTitel = document.getElementById('win-subtitel');
+            const hoofdTekst = document.getElementById('win-hoofdtekst');
+            
+            if (data.player_id === spelerId) {
+                hoofdTekst.innerText = "JIJ HEBT GEWONNEN!!!";
+                subTitel.innerText = "Gefeliciteerd, wat een prestatie!";
+            } else {
+                hoofdTekst.innerText = "SPEL AFGELOPEN";
+                subTitel.innerText = `Speler ${data.player_id + 1} heeft het spel gewonnen!`;
+            }
+        }
     };
 }
 
@@ -143,7 +160,7 @@ function tekenKaarten(hand) {
         if (waarde === 'gespeeld') {
             const img = document.createElement('img');
             img.src = 'kaart15.png';
-            img.className = 'speelkaart-img'; // DE FIX: Hierdoor past hij netjes in het vakje!
+            img.className = 'speelkaart-img'; 
             wrapper.appendChild(img);
             wrapper.classList.add('gespeeld');
             wrapper.style.cursor = 'default';
@@ -330,7 +347,10 @@ function speelZet() {
                 pion_id: pionIdNummer
             });
         } else if (pionnen.length === 2) {
-            open7Popup();
+            // NIEUW: Pak de labels van de pionnen en stuur ze door naar de 7-popup!
+            const lbl1 = pionnen[0].querySelector('.pos-label') ? pionnen[0].querySelector('.pos-label').innerText : "?";
+            const lbl2 = pionnen[1].querySelector('.pos-label') ? pionnen[1].querySelector('.pos-label').innerText : "?";
+            open7Popup(lbl1, lbl2);
         }
 
     } else if (geselecteerdeKaart === 'J') {
@@ -400,7 +420,7 @@ function draaiGeselecteerdeKaartOm() {
     const geselecteerdeKaart = document.querySelector('.speelkaart-wrapper.geselecteerd');
     if (geselecteerdeKaart) {
         geselecteerdeKaart.querySelector('img').src = 'kaart15.png';
-        geselecteerdeKaart.querySelector('img').className = 'speelkaart-img'; // DE FIX: Ook hier netjes het jasje aantrekken!
+        geselecteerdeKaart.querySelector('img').className = 'speelkaart-img'; 
         geselecteerdeKaart.classList.add('gespeeld');
         geselecteerdeKaart.classList.remove('geselecteerd');
         document.querySelectorAll('.pion').forEach(p => p.classList.remove('geselecteerd'));
@@ -416,7 +436,7 @@ function draaiAlleKaartenOm() {
             const img = wrapper.querySelector('img');
             if (img) {
                 img.src = 'kaart15.png';
-                img.className = 'speelkaart-img'; // DE FIX: En hier ook!
+                img.className = 'speelkaart-img'; 
             }
             wrapper.classList.add('gespeeld');
             wrapper.classList.remove('geselecteerd');
@@ -433,11 +453,16 @@ function draaiAlleKaartenOm() {
 let stappenPionBoven = 0; 
 let stappenPionOnder = 0;
 
-function open7Popup() {
+function open7Popup(label1, label2) {
     document.getElementById('popup-7').classList.remove('verborgen');
     document.querySelector('#popup-7 .popup-speel-knop').classList.add('uitgeschakeld'); 
     stappenPionBoven = 0;
     stappenPionOnder = 0;
+    
+    // Injecteer de labels naast de pionnen
+    document.getElementById('label-7-boven').innerText = label1 || "?";
+    document.getElementById('label-7-onder').innerText = label2 || "?";
+    
     teken7Stappen();
 }
 

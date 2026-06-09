@@ -62,9 +62,13 @@ class GameManager:
         elif t == "DISCARD_CARD":
             self.discardCard(event.get("player_id"), event.get("card"))
 
-    # ========================================================
-    # DE ULTIEME VOORSPELLER! Kan een kaart gespeeld worden?
-    # ========================================================
+    # NIEUW: Win Controle!
+    def check_win(self, player):
+        for pawn in player.pawns:
+            if pawn.position < 64:
+                return False
+        return True
+
     def is_card_playable(self, player, card):
         if card.face == "gespeeld": return False
         
@@ -89,7 +93,6 @@ class GameManager:
             return has_own and has_enemy
 
         elif card.face == "7":
-            # NIEUWE FIX: Tel alle maximale stappen van je pionnen op.
             total_possible_steps = 0
             for pawn in player.pawns:
                 if pawn.inPlay:
@@ -98,7 +101,6 @@ class GameManager:
                         geldig, _ = bereken_route(self.board, pawn, s)
                         if geldig: max_steps = s
                     total_possible_steps += max_steps
-            # Als je gezamenlijk nog 7 (of meer) stappen kunt zetten, MOET je hem spelen!
             return total_possible_steps >= 7
 
         else:
@@ -305,6 +307,13 @@ class GameManager:
         if card_to_remove: card_to_remove.face = "gespeeld"
 
         self._create_async_task(self.comm.send_player_message(player_id, {"type": "MOVE_SUCCEEDED"}))
+        
+        # === DE WIN TRIGGER ===
+        if self.check_win(player):
+            self.broadcast_game_state()
+            self._create_async_task(self.comm._broadcast_websocket({"type": "GAME_WON", "player_id": player.id}))
+            return
+
         self.endTurn()
 
     def endTurn(self):
