@@ -51,27 +51,23 @@ def splitSeven(board, pawn, pawn2, movePawn2):
         return True
     return False
 
+# DE FIX: Deze functie ruilt puur de posities om zonder de ander "dood" te maken.
 def switch(board, pawn, pawn2):
     if pawn.inPlay and pawn2.inPlay:
-        # Je mag niet ruilen met pionnen in de eindzone (E1 t/m E4) of als je in de eindzone staat
         if pawn.position >= 64 or pawn2.position >= 64:
             return False
-            
+
         space1 = board.spaces[pawn.position]
         space2 = board.spaces[pawn2.position]
-        
-        # Check: Staat de vijand (of jijzelf) toevallig op z'n eigen voordeur? Dan mag je niet ruilen
-        if space1.owner is not None and int(pawn.owner) == space1.owner.id:
-            return False
+
         if space2.owner is not None and int(pawn2.owner) == space2.owner.id:
             return False
 
-        # Ruil de posities wiskundig om
+        # Directe wiskundige ruil
         tempPosition = pawn.position
         pawn.position = pawn2.position
         pawn2.position = tempPosition
         
-        # Zet de pionnen op de juiste plekken in de 'board.spaces' array
         board.spaces[pawn.position].occupied_by = pawn
         board.spaces[pawn2.position].occupied_by = pawn2
         return True

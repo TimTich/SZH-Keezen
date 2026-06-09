@@ -2,7 +2,7 @@ import asyncio
 from game_components.board import Board
 from game_components.deck import Deck
 from game_components.card import Card
-from game_logic.move import movePawn
+from game_logic.move import movePawn, bereken_route, getSteps
 from game_components.player import Player
 from connection.communication import CommunicationManager
 
@@ -58,6 +58,80 @@ class GameManager:
                 event.get("movePawn2"),
                 event.get("target_player_id")
             )
+            
+        elif t == "DISCARD_CARD":
+            self.discardCard(event.get("player_id"), event.get("card"))
+
+    # ========================================================
+    # DE ULTIEME VOORSPELLER! Kan een kaart gespeeld worden?
+    # ========================================================
+    def is_card_playable(self, player, card):
+        if card.face == "gespeeld": return False
+        
+        if card.face in ("A", "K"):
+            for pawn in player.pawns:
+                if not pawn.inPlay:
+                    start_space = self.board.spaces[pawn.startSpace]
+                    bezetter = getattr(start_space, 'occupied_by', None)
+                    if bezetter is None or int(bezetter.owner) != int(player.id):
+                        return True
+            if card.face == "A":
+                for pawn in player.pawns:
+                    if pawn.inPlay:
+                        geldig, _ = bereken_route(self.board, pawn, 1)
+                        if geldig: return True
+            return False
+
+        elif card.face == "J":
+            alle_pionnen = self.get_all_pawns_status()
+            has_own = any(p["is_valid_own"] for p in alle_pionnen.get(str(player.id), []))
+            has_enemy = any(any(p["is_valid"] for p in pawns) for pid, pawns in alle_pionnen.items() if pid != str(player.id))
+            return has_own and has_enemy
+
+        elif card.face == "7":
+            # NIEUWE FIX: Tel alle maximale stappen van je pionnen op.
+            total_possible_steps = 0
+            for pawn in player.pawns:
+                if pawn.inPlay:
+                    max_steps = 0
+                    for s in range(1, 8):
+                        geldig, _ = bereken_route(self.board, pawn, s)
+                        if geldig: max_steps = s
+                    total_possible_steps += max_steps
+            # Als je gezamenlijk nog 7 (of meer) stappen kunt zetten, MOET je hem spelen!
+            return total_possible_steps >= 7
+
+        else:
+            steps = getSteps(card)
+            for pawn in player.pawns:
+                if pawn.inPlay:
+                    geldig, _ = bereken_route(self.board, pawn, steps)
+                    if geldig: return True
+            return False
+
+    def discardCard(self, player_id, card_data):
+        try: player_id = int(player_id)
+        except (TypeError, ValueError): return
+
+        current_player = self.players[self.current_player_index]
+        if player_id != current_player.id:
+            self._create_async_task(self.comm.send_player_message(player_id, {"type": "FOUT_ZET", "bericht": "Het is niet jouw beurt."}))
+            return
+
+        player = next((p for p in self.players if p.id == player_id), None)
+        if player is None: return
+
+        card = Card(card_data["face"])
+        
+        if self.is_card_playable(player, card):
+            self._create_async_task(self.comm.send_player_message(player_id, {"type": "FOUT_ZET", "bericht": "Ongeldig! Deze kaart kan nog gewoon gespeeld worden."}))
+            return
+
+        card_to_remove = next((c for c in player.cards if c.face == card.face and c.face != "gespeeld"), None)
+        if card_to_remove:
+            card_to_remove.face = "gespeeld"
+            self._create_async_task(self.comm.send_player_message(player_id, {"type": "MOVE_SUCCEEDED"}))
+            self.endTurn()
     
     async def broadcast_player_count(self):
         message = {"type": "PLAYER_COUNT", "player_count": len(self.players)}
@@ -81,13 +155,18 @@ class GameManager:
             status[str(p.id)] = []
             for i, pawn in enumerate(p.pawns):
                 is_valid = False
-                if pawn.inPlay and pawn.position < 64 and pawn.position != pawn.startSpace:
-                    is_valid = True
+                is_valid_own = False
+                
+                if pawn.inPlay and pawn.position < 64:
+                    is_valid_own = True 
+                    if pawn.position != pawn.startSpace:
+                        is_valid = True 
                 
                 status[str(p.id)].append({
                     "id": i,
                     "label": self.format_pawn_label(pawn),
-                    "is_valid": is_valid
+                    "is_valid": is_valid,
+                    "is_valid_own": is_valid_own
                 })
         return status
 
@@ -109,8 +188,22 @@ class GameManager:
     
     def broadcast_hands(self):
         for player in self.players:
-            kaart_waardes = [card.face for card in player.cards]
-            bericht = {"type": "NIEUWE_HAND", "kaarten": kaart_waardes}
+            kaart_waardes = []
+            weggooi_opties = {}
+            
+            for card in player.cards:
+                kaart_waardes.append(card.face)
+                if card.face != "gespeeld":
+                    speelbaar = self.is_card_playable(player, card)
+                    weggooi_opties[card.face] = not speelbaar
+                else:
+                    weggooi_opties[card.face] = False
+
+            bericht = {
+                "type": "NIEUWE_HAND",
+                "kaarten": kaart_waardes,
+                "weggooi_opties": weggooi_opties
+            }
             self._create_async_task(self.comm.send_player_message(player.id, bericht))
 
     def startGame(self):
@@ -153,29 +246,27 @@ class GameManager:
         pawn2 = None
         card = Card(card_data["face"])
         
-        # === NIEUW: Check voor onspeelbare Boer ===
+        if card.face == "gespeeld": return
+
         if card.face == "J":
             alle_pionnen = self.get_all_pawns_status()
-            has_own = any(p["is_valid"] for p in alle_pionnen.get(str(player.id), []))
+            
+            has_own = any(p["is_valid_own"] for p in alle_pionnen.get(str(player.id), []))
             has_enemy = any(any(p["is_valid"] for p in pawns) for pid, pawns in alle_pionnen.items() if pid != str(player.id))
             
-            # Als hij echt niet gespeeld kan worden...
             if not has_own or not has_enemy:
                 has_ace_or_king = any(c.face in ("A", "K") for c in player.cards)
                 has_unplayed_pawn = any(not p.inPlay for p in player.pawns)
                 
                 if has_ace_or_king and has_unplayed_pawn:
-                    # Speler wordt gedwongen in het spel te komen
                     self._create_async_task(self.comm.send_player_message(player_id, {"type": "FOUT_ZET", "bericht": "Je kunt de Boer niet spelen. Je moet eerst een Aas of Koning spelen."}))
                     return
                 else:
-                    # Gooi hem geruisloos in de prullenbak
-                    card_to_remove = next((c for c in player.cards if c.face == card.face), None)
-                    if card_to_remove: player.cards.remove(card_to_remove)
+                    card_to_remove = next((c for c in player.cards if c.face == card.face and c.face != "gespeeld"), None)
+                    if card_to_remove: card_to_remove.face = "gespeeld"
                     self._create_async_task(self.comm.send_player_message(player_id, {"type": "MOVE_SUCCEEDED"}))
                     self.endTurn()
                     return
-        # ==========================================
 
         if card.face == "J" and target_player_id is not None:
             try:
@@ -195,9 +286,8 @@ class GameManager:
         if not pawn.inPlay and card.face not in ("A", "K"):
             has_ace_or_king = any(c.face in ("A", "K") for c in player.cards)
             if not has_ace_or_king:
-                card_to_remove = next((c for c in player.cards if c.face == card.face), None)
-                if card_to_remove: player.cards.remove(card_to_remove)
-                
+                card_to_remove = next((c for c in player.cards if c.face == card.face and c.face != "gespeeld"), None)
+                if card_to_remove: card_to_remove.face = "gespeeld"
                 self._create_async_task(self.comm.send_player_message(player_id, {"type": "MOVE_SUCCEEDED"}))
                 self.endTurn()
                 return
@@ -211,14 +301,23 @@ class GameManager:
             self._create_async_task(self.comm.send_player_message(player_id, {"type": "FOUT_ZET", "bericht": "Ongeldige zet."}))
             return
 
-        card_to_remove = next((c for c in player.cards if c.face == card.face), None)
-        if card_to_remove: player.cards.remove(card_to_remove)
+        card_to_remove = next((c for c in player.cards if c.face == card.face and c.face != "gespeeld"), None)
+        if card_to_remove: card_to_remove.face = "gespeeld"
 
         self._create_async_task(self.comm.send_player_message(player_id, {"type": "MOVE_SUCCEEDED"}))
         self.endTurn()
 
     def endTurn(self):
-        if all(len(p.cards) == 0 for p in self.players):
+        ronde_klaar = True
+        for p in self.players:
+            for c in p.cards:
+                if c.face != "gespeeld":
+                    ronde_klaar = False
+                    break
+            if not ronde_klaar:
+                break
+                
+        if ronde_klaar:
             self.sub_round += 1
             if self.sub_round > 3:
                 self.sub_round = 1
@@ -227,11 +326,14 @@ class GameManager:
                 self.deck.shuffle()
             
             deal_amount = 5 if self.sub_round == 1 else 4
+            for p in self.players:
+                p.cards = []
+                
             self.deck.dealCards(deal_amount)
             self.current_player_index = self.starting_player_index
-            self.broadcast_hands()
         else:
             self.current_player_index = (self.current_player_index + 1) % len(self.players)
             
+        self.broadcast_hands()
         self._create_async_task(self.broadcast_current_player())
         self.broadcast_game_state()

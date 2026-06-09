@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Keezen Control Hub</title>
-    <link rel="stylesheet" href="style.css?v=25">
+    <link rel="stylesheet" href="style.css?v=30">
 </head>
 <body>
     <div id="start-scherm" class="container">
@@ -31,10 +31,14 @@
 
         <div id="hand-kaarten" class="hand-kaarten-balk"></div>
 
-        <button id="bevestig-knop" class="actie-knop uitgeschakeld" onclick="speelZet()">SPEEL</button>
+        <div class="actie-knoppen-rij">
+            <button id="bevestig-knop" class="actie-knop uitgeschakeld" onclick="speelZet()">SPEEL</button>
+            <button id="weggooi-knop" class="actie-knop uitgeschakeld" onclick="gooiKaartWeg()">GOOI WEG</button>
+        </div>
+
         <div id="jouw-speler-game" class="jouw-speler-klein">Aanmelden...</div>
 
-        <button class="stop-knop" onclick="stopSpel()">STOP SPEL</button>
+        
 
         <div id="popup-7" class="popup-overlay verborgen">
             <div class="popup-container">
@@ -62,6 +66,6 @@
         </div>
     </div>
 
-    <<script src="script.js?v=99999"></script>
+    <script src="script.js?v=200"></script>
 </body>
 </html>
