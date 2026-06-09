@@ -24,27 +24,46 @@ class GameManager:
 
     def handleEvent(self, event):
         t = event["type"]
-        if t == "PLAYER_JOIN" and not self.game_started:
+        if t == "PLAYER_JOIN":
             player_id = event.get("player_id")
-            existing_ids = {p.id for p in self.players}
             
-            if player_id is None:
-                free_id = next((i for i in range(4) if i not in existing_ids), None)
-                if free_id is None:
-                    return
-                player_id = free_id
-            
-            if player_id not in existing_ids:
-                self.players.append(Player("player" + str(player_id), player_id))
-            
-            if event.get("_websocket"):
-                self.comm.register_websocket_player(event["_websocket"], player_id)
-                self._create_async_task(self.comm.send_player_message(player_id, {
-                    "type": "ASSIGNED_PLAYER_ID",
-                    "player_id": player_id
-                }))
+            if not self.game_started:
+                # Spel is nog niet gestart: voeg spelers normaal toe
+                existing_ids = {p.id for p in self.players}
                 
-            self._create_async_task(self.broadcast_player_count())
+                if player_id is None:
+                    free_id = next((i for i in range(4) if i not in existing_ids), None)
+                    if free_id is None:
+                        return
+                    player_id = free_id
+                
+                if player_id not in existing_ids:
+                    self.players.append(Player("player" + str(player_id), player_id))
+                
+                if event.get("_websocket"):
+                    self.comm.register_websocket_player(event["_websocket"], player_id)
+                    self._create_async_task(self.comm.send_player_message(player_id, {
+                        "type": "ASSIGNED_PLAYER_ID",
+                        "player_id": player_id
+                    }))
+                    
+                self._create_async_task(self.broadcast_player_count())
+            else:
+                # FIX: Het spel is al gestart! Koppel de telefoon direct aan een vrije speler-positie
+                if player_id is None:
+                    mapped_pids = set(self.comm.websocket_player_map.values())
+                    player_id = next((i for i in range(len(self.players)) if i not in mapped_pids), 0)
+                
+                if event.get("_websocket"):
+                    self.comm.register_websocket_player(event["_websocket"], player_id)
+                    self._create_async_task(self.comm.send_player_message(player_id, {
+                        "type": "ASSIGNED_PLAYER_ID",
+                        "player_id": player_id
+                    }))
+                    # Stuur direct je kaarten en de bord-status naar je telefoon zodat de knoppen activeren!
+                    self.broadcast_hands()
+                    self.broadcast_game_state()
+                    self._create_async_task(self.broadcast_current_player())
 
         elif t == "CONFIRM_START":
             self.startGame()
@@ -62,7 +81,6 @@ class GameManager:
         elif t == "DISCARD_CARD":
             self.discardCard(event.get("player_id"), event.get("card"))
 
-    # FIX: Waterdichte controle of álle 4 de pionnen in de eindzone (64 t/m 79) staan
     def check_win(self, player):
         for pawn in player.pawns:
             if not (64 <= pawn.position <= 79):
@@ -84,7 +102,7 @@ class GameManager:
                     if pawn.inPlay:
                         geldig, _ = bereken_route(self.board, pawn, 1)
                         if geldig: return True
-            return False
+                return False
 
         elif card.face == "J":
             alle_pionnen = self.get_all_pawns_status()
@@ -181,12 +199,12 @@ class GameManager:
                 pion_id_naam = f"pion-{i + 1}"
                 pionnen_status[pion_id_naam] = self.format_pawn_label(pawn)
             
-            update_bericht = { 
-                "type": "UPDATE_BORD", 
-                "pionnen": pionnen_status,
-                "alle_pionnen": alle_pionnen
-            }
-            self._create_async_task(self.comm.send_player_message(player.id, update_bericht))
+                update_bericht = { 
+                    "type": "UPDATE_BORD", 
+                    "pionnen": pionnen_status,
+                    "alle_pionnen": alle_pionnen
+                }
+                self._create_async_task(self.comm.send_player_message(player.id, update_bericht))
     
     def broadcast_hands(self):
         for player in self.players:
