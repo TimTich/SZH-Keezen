@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Keezen Control Hub</title>
-    <link rel="stylesheet" href="style.css?v=60">
+    <link rel="stylesheet" href="style.css?v=70">
 </head>
 <body>
     <div id="start-scherm" class="container">
@@ -38,6 +38,7 @@
 
         <div id="jouw-speler-game" class="jouw-speler-klein">Aanmelden...</div>
 
+        <!-- 7 POPUP -->
         <div id="popup-7" class="popup-overlay verborgen">
             <div class="popup-container">
                 <div class="popup-rij">
@@ -58,6 +59,7 @@
             </div>
         </div>
 
+        <!-- BOER POPUP -->
         <div id="popup-boer" class="popup-overlay verborgen">
             <div class="popup-container boer-content">
                 <h2 style="color: black; margin-bottom: 20px;">KIES EEN PION OM MEE TE RUILEN</h2>
@@ -70,12 +72,12 @@
         </div>
     </div>
 
+    <!-- HET WIN SCHERM (ZONDER NIEUW SPEL KNOP) -->
     <div id="win-scherm" class="verborgen">
         <h1 class="win-titel" id="win-hoofdtekst">JIJ HEBT GEWONNEN!</h1>
         <h2 id="win-subtitel" style="color: white; font-size: 3rem;">Gefeliciteerd!</h2>
-        <button class="speel-knop" style="margin-top: 50px; pointer-events: auto !important;" onclick="location.reload()">NIEUW SPEL</button>
     </div>
 
-    <script src="script.js?v=60"></script>
+    <script src="script.js?v=70"></script>
 </body>
 </html>

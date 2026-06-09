@@ -62,10 +62,10 @@ class GameManager:
         elif t == "DISCARD_CARD":
             self.discardCard(event.get("player_id"), event.get("card"))
 
-    # NIEUW: Win Controle!
+    # FIX: Waterdichte controle of álle 4 de pionnen in de eindzone (64 t/m 79) staan
     def check_win(self, player):
         for pawn in player.pawns:
-            if pawn.position < 64:
+            if not (64 <= pawn.position <= 79):
                 return False
         return True
 
@@ -308,8 +308,8 @@ class GameManager:
 
         self._create_async_task(self.comm.send_player_message(player_id, {"type": "MOVE_SUCCEEDED"}))
         
-        # === DE WIN TRIGGER ===
         if self.check_win(player):
+            self.board.spaces[pawn.position].occupied_by = pawn
             self.broadcast_game_state()
             self._create_async_task(self.comm._broadcast_websocket({"type": "GAME_WON", "player_id": player.id}))
             return
