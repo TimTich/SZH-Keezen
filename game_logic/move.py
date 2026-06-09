@@ -1,9 +1,8 @@
 def movePawn(board, card, pawn, pawn2=None, movePawn2=None):
     if card.face == "7" and pawn2 and movePawn2:
         return splitSeven(board, pawn, pawn2, movePawn2)
-    # FIX: Tijdelijke bypass voor de Boer. De zet slaagt, de kaart gaat weg, maar pionnen blijven staan.
-    elif card.face == "J":
-        return True 
+    elif card.face == "J" and pawn and pawn2:
+        return switch(board, pawn, pawn2)
     elif (card.face == "K" or card.face == "A") and (not pawn.inPlay):
         return enterPlay(board, pawn, card.face)
     elif card.face != "J" and pawn.inPlay:
@@ -54,18 +53,25 @@ def splitSeven(board, pawn, pawn2, movePawn2):
 
 def switch(board, pawn, pawn2):
     if pawn.inPlay and pawn2.inPlay:
+        # Je mag niet ruilen met pionnen in de eindzone (E1 t/m E4) of als je in de eindzone staat
+        if pawn.position >= 64 or pawn2.position >= 64:
+            return False
+            
         space1 = board.spaces[pawn.position]
         space2 = board.spaces[pawn2.position]
         
+        # Check: Staat de vijand (of jijzelf) toevallig op z'n eigen voordeur? Dan mag je niet ruilen
         if space1.owner is not None and int(pawn.owner) == space1.owner.id:
             return False
         if space2.owner is not None and int(pawn2.owner) == space2.owner.id:
             return False
 
+        # Ruil de posities wiskundig om
         tempPosition = pawn.position
         pawn.position = pawn2.position
         pawn2.position = tempPosition
         
+        # Zet de pionnen op de juiste plekken in de 'board.spaces' array
         board.spaces[pawn.position].occupied_by = pawn
         board.spaces[pawn2.position].occupied_by = pawn2
         return True

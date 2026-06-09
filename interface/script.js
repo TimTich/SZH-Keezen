@@ -5,6 +5,7 @@ const hostName = window.location.hostname || "localhost";
 const piAddress = `ws://${hostName}:8765`;
 let socket;
 let huidigeSpeler = 0;
+let globalePionnenStatus = {}; 
 
 let opgeslagenId = sessionStorage.getItem('keezenSpelerId');
 let spelerId = opgeslagenId !== null ? parseInt(opgeslagenId) : null;
@@ -21,15 +22,11 @@ function verbindMetPi() {
 
     socket.onopen = function(e) {
         console.log("Verbonden met de Raspberry Pi!");
-        verstuurBericht({
-            type: "PLAYER_JOIN",
-            player_id: spelerId
-        });
+        verstuurBericht({ type: "PLAYER_JOIN", player_id: spelerId });
     };
 
     socket.onmessage = function(event) {
         const data = JSON.parse(event.data);
-        console.log("Bericht van Pi:", data);
 
         if (data.type === "GAME_START") {
             document.getElementById('start-scherm').classList.add('verborgen');
@@ -49,6 +46,9 @@ function verbindMetPi() {
         }
         else if (data.type === "UPDATE_BORD") {
             updatePionPosities(data.pionnen); 
+            if(data.alle_pionnen) {
+                globalePionnenStatus = data.alle_pionnen;
+            }
         }
         else if (data.type === "CURRENT_PLAYER") {
             updateHuidigeBeurt(data.player_id);
@@ -66,10 +66,6 @@ function verbindMetPi() {
             checkSelecties();
         }
     };
-
-    socket.onclose = function(event) {
-        console.log("Verbinding met Pi verbroken.");
-    };
 }
 
 function verstuurBericht(berichtObject) {
@@ -80,18 +76,20 @@ function verstuurBericht(berichtObject) {
 
 function updateSpelerTeller(aantalSpelers) {
     const teller = document.getElementById('speler-teller');
-    if (teller) {
-        teller.textContent = `${aantalSpelers}/4`;
-    }
+    if (teller) teller.textContent = `${aantalSpelers}/4`;
+    
     const speelKnop = document.getElementById('speel-knop');
     if (speelKnop) {
         if (aantalSpelers >= 2 && aantalSpelers <= 4) {
             speelKnop.classList.remove('uitgeschakeld');
             speelKnop.style.pointerEvents = 'auto'; 
-            speelKnop.style.cursor = 'pointer';
+            speelKnop.style.filter = 'grayscale(0%)';
+            speelKnop.style.opacity = '1';
         } else {
             speelKnop.classList.add('uitgeschakeld');
             speelKnop.style.pointerEvents = 'none';
+            speelKnop.style.filter = 'grayscale(100%)';
+            speelKnop.style.opacity = '0.5';
         }
     }
 }
@@ -99,16 +97,14 @@ function updateSpelerTeller(aantalSpelers) {
 function updateHuidigeBeurt(playerId) {
     huidigeSpeler = playerId;
     const beurtElement = document.getElementById('huidige-beurt');
-    if (beurtElement) {
-        // VISUELE FIX: +1 voor de menselijke speler
-        beurtElement.textContent = `HUIDIGE BEURT: speler ${playerId + 1}`;
-    }
+    if (beurtElement) beurtElement.textContent = `HUIDIGE BEURT: speler ${playerId + 1}`;
     updateBeurtStatus();
 }
 
 function updateBeurtStatus() {
     const bevestigKnop = document.getElementById('bevestig-knop');
     const jouwSpelerGameElement = document.getElementById('jouw-speler-game');
+    
     if (bevestigKnop) {
         if (spelerId === huidigeSpeler) {
             bevestigKnop.classList.remove('uitgeschakeld');
@@ -117,14 +113,13 @@ function updateBeurtStatus() {
         }
     }
     if (jouwSpelerGameElement) {
-        // VISUELE FIX: +1 voor de menselijke speler
         const weergaveId = spelerId + 1;
         jouwSpelerGameElement.textContent = spelerId === huidigeSpeler ? `Jij bent speler ${weergaveId} (jouw beurt)` : `Jij bent speler ${weergaveId}`;
     }
+    checkSelecties();
 }
 
 function updateJouwSpeler(playerId) {
-    // VISUELE FIX: +1 voor de menselijke speler
     const weergaveId = playerId + 1;
     const jouwSpelerElement = document.getElementById('jouw-speler');
     if (jouwSpelerElement) jouwSpelerElement.textContent = `Jij bent speler ${weergaveId}`;
@@ -248,10 +243,18 @@ function checkSelecties() {
         }
     }
 
-    if (knopActief && bevestigKnop) {
-        bevestigKnop.classList.remove('uitgeschakeld');
-    } else if (bevestigKnop) {
-        bevestigKnop.classList.add('uitgeschakeld');
+    if (bevestigKnop) {
+        if (knopActief) {
+            bevestigKnop.classList.remove('uitgeschakeld');
+            bevestigKnop.style.pointerEvents = 'auto';
+            bevestigKnop.style.filter = 'grayscale(0%)';
+            bevestigKnop.style.opacity = '1';
+        } else {
+            bevestigKnop.classList.add('uitgeschakeld');
+            bevestigKnop.style.pointerEvents = 'none';
+            bevestigKnop.style.filter = 'grayscale(100%)';
+            bevestigKnop.style.opacity = '0.5';
+        }
     }
 }
 
@@ -266,7 +269,40 @@ function speelZet() {
     if (geselecteerdeKaart === '7') {
         open7Popup();
     } else if (geselecteerdeKaart === 'J') {
-        openBoerPopup();
+        
+        // --- NIEUW: SLIMME CHECK VOOR DE BOER ---
+        let hasValidOwn = false;
+        let hasValidEnemy = false;
+        
+        // Heeft de speler zelf geldige pionnen in het veld?
+        if (globalePionnenStatus[spelerId]) {
+            hasValidOwn = globalePionnenStatus[spelerId].some(p => p.is_valid);
+        }
+        
+        // Hebben de tegenstanders geldige pionnen in het veld?
+        for (let targetId in globalePionnenStatus) {
+            if (parseInt(targetId) === spelerId) continue;
+            if (globalePionnenStatus[targetId].some(p => p.is_valid)) {
+                hasValidEnemy = true;
+                break;
+            }
+        }
+        
+        // Als de Boer onspeelbaar is, sla de pop-up over en gooi hem weg!
+        if (!hasValidOwn || !hasValidEnemy) {
+            const pion = document.querySelector('.pion.geselecteerd');
+            const pionIdNummer = parseInt(pion.dataset.id.replace('pion-', '')) - 1; 
+            verstuurBericht({
+                type: "CARD_PLAYED",
+                player_id: spelerId,
+                card: { face: geselecteerdeKaart },
+                pion_id: pionIdNummer
+            });
+        } else {
+            // Hij is speelbaar, open normaal de pop-up
+            openBoerPopup();
+        }
+        
     } else {
         const pion = document.querySelector('.pion.geselecteerd');
         const pionIdNummer = parseInt(pion.dataset.id.replace('pion-', '')) - 1; 
@@ -301,26 +337,6 @@ function bevestig7Zet() {
     }
 }
 
-function bevestigBoerZet() { 
-    if (spelerId !== huidigeSpeler) return;
-    const eigenPion = document.querySelector('.pion.geselecteerd');
-    const vijandigePion = document.querySelector('.boer-wrapper.geselecteerd-boer'); 
-    const geselecteerdeKaart = document.querySelector('.speelkaart-wrapper.geselecteerd img').alt;
-
-    if (eigenPion && vijandigePion) {
-        const pionId = parseInt(eigenPion.dataset.id.replace('pion-', '')) - 1;
-        
-        verstuurBericht({
-            type: "CARD_PLAYED",
-            player_id: spelerId,
-            card: { face: geselecteerdeKaart },
-            pion_id: pionId,
-            pion2_id: "TBD_VIJAND_ID"
-        });
-        document.getElementById('popup-boer').classList.add('verborgen'); 
-    }
-}
-
 function draaiGeselecteerdeKaartOm() {
     const geselecteerdeKaart = document.querySelector('.speelkaart-wrapper.geselecteerd');
     if (geselecteerdeKaart) {
@@ -348,6 +364,9 @@ function draaiAlleKaartenOm() {
     checkSelecties();
 }
 
+/* ============================================
+   7 POPUP
+   ============================================ */
 let stappenPionBoven = 0; 
 let stappenPionOnder = 0;
 
@@ -396,39 +415,113 @@ function teken7Stappen() {
     }
 }
 
+/* ============================================
+   DE BOER (J) DYNAMISCHE POPUP
+   ============================================ */
+let geselecteerdeBoerPionInfo = null;
+
 function openBoerPopup() {
     document.getElementById('popup-boer').classList.remove('verborgen');
-    document.getElementById('boer-speel-knop').classList.add('uitgeschakeld');
+    const speelKnop = document.getElementById('boer-speel-knop');
+    
+    if(speelKnop) {
+        speelKnop.classList.add('uitgeschakeld');
+        speelKnop.style.pointerEvents = 'none';
+        speelKnop.style.backgroundColor = 'gray';
+        speelKnop.style.filter = 'grayscale(100%)';
+    }
+    
+    geselecteerdeBoerPionInfo = null;
     tekenBoerPionnen();
 }
 
 function tekenBoerPionnen() {
-    const kleuren = ['#0066ff', '#cc0000', '#33cc33']; 
-    const rijen = ['blauw', 'rood', 'groen'];
+    const container = document.getElementById('boer-tegenstanders-container');
+    if(!container) return;
+    container.innerHTML = '';
     
-    rijen.forEach((k, idx) => {
-        const rD = document.getElementById(`boer-rij-${k}`);
-        if(rD) {
-            rD.innerHTML = ''; 
-            for(let i = 0; i < 4; i++) {
-                const w = document.createElement('div');
-                w.className = 'boer-wrapper'; 
-                w.innerHTML = `
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 36" class="boer-pion-icoon" width="85" height="120">
-                        <rect width="24" height="36" fill="transparent" pointer-events="all"/>
-                        <path d="M12,2 C14.2,2 16,3.8 16,6 C16,7.6 15,9 13.6,9.7 C14.5,12 17,19 18,24 L6,24 C7,19 9.5,12 10.4,9.7 C9,9 8,7.6 8,6 C8,3.8 9.8,2 12,2 Z M4,28 L20,28 L20,32 L4,32 L4,28 Z" fill="${kleuren[idx]}" stroke="black" stroke-width="2"/>
-                    </svg>`;
-                w.onclick = function() { selecteerBoerPion(this); };
-                rD.appendChild(w);
+    const kleuren = ['#0066ff', '#cc0000', '#33cc33', '#ff9900']; 
+    
+    for (let targetId in globalePionnenStatus) {
+        if (parseInt(targetId) === spelerId) continue; 
+        
+        const pionnenLijst = globalePionnenStatus[targetId];
+        
+        const rijDiv = document.createElement('div');
+        rijDiv.className = 'boer-speler-rij';
+        
+        const titel = document.createElement('h3');
+        titel.textContent = `Speler ${parseInt(targetId) + 1}`;
+        titel.className = 'boer-speler-titel';
+        rijDiv.appendChild(titel);
+        
+        const pionnenDiv = document.createElement('div');
+        pionnenDiv.className = 'boer-pionnen-container';
+        
+        pionnenLijst.forEach(pionInfo => {
+            const w = document.createElement('div');
+            w.className = 'boer-wrapper';
+            if (!pionInfo.is_valid) {
+                w.classList.add('ongeldig');
             }
-        }
-    });
+            
+            const kleur = kleuren[parseInt(targetId) % kleuren.length];
+            
+            w.innerHTML = `
+                <div class="boer-label">${pionInfo.label}</div>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 36" class="boer-pion-icoon" width="60" height="85">
+                    <path d="M12,2 C14.2,2 16,3.8 16,6 C16,7.6 15,9 13.6,9.7 C14.5,12 17,19 18,24 L6,24 C7,19 9.5,12 10.4,9.7 C9,9 8,7.6 8,6 C8,3.8 9.8,2 12,2 Z M4,28 L20,28 L20,32 L4,32 L4,28 Z" fill="${pionInfo.is_valid ? kleur : '#888'}" stroke="black" stroke-width="2"/>
+                </svg>
+            `;
+            
+            if (pionInfo.is_valid) {
+                w.onclick = function() { selecteerBoerPion(this, targetId, pionInfo.id); };
+            }
+            
+            pionnenDiv.appendChild(w);
+        });
+        
+        rijDiv.appendChild(pionnenDiv);
+        container.appendChild(rijDiv);
+    }
 }
 
-function selecteerBoerPion(el) {
+function selecteerBoerPion(el, targetId, pionId) {
     document.querySelectorAll('.boer-wrapper').forEach(p => p.classList.remove('geselecteerd-boer'));
     el.classList.add('geselecteerd-boer');
-    document.getElementById('boer-speel-knop').classList.remove('uitgeschakeld');
+    geselecteerdeBoerPionInfo = { target_player_id: targetId, pion_id: pionId };
+    
+    const speelKnop = document.getElementById('boer-speel-knop');
+    if(speelKnop) {
+        speelKnop.classList.remove('uitgeschakeld');
+        speelKnop.style.pointerEvents = 'auto';
+        speelKnop.style.filter = 'none';
+        speelKnop.style.backgroundColor = '#cc0000';
+    }
+}
+
+function bevestigBoerZet() { 
+    if (spelerId !== huidigeSpeler) return;
+    const eigenPion = document.querySelector('.pion.geselecteerd');
+    const kaartImg = document.querySelector('.speelkaart-wrapper.geselecteerd img');
+    if (!kaartImg) return;
+    const geselecteerdeKaart = kaartImg.alt;
+
+    if (eigenPion && geselecteerdeBoerPionInfo) {
+        const pionId = parseInt(eigenPion.dataset.id.replace('pion-', '')) - 1;
+        
+        verstuurBericht({
+            type: "CARD_PLAYED",
+            player_id: spelerId,
+            card: { face: geselecteerdeKaart },
+            pion_id: pionId,
+            pion2_id: geselecteerdeBoerPionInfo.pion_id,
+            target_player_id: geselecteerdeBoerPionInfo.target_player_id
+        });
+        document.getElementById('popup-boer').classList.add('verborgen'); 
+    } else {
+        alert("Zorg dat je een eigen pion hebt geselecteerd op het bord!");
+    }
 }
 
 function stopSpel() {
@@ -443,7 +536,5 @@ function sluitUitlegUI() { document.getElementById('uitleg-ui-scherm').classList
 
 document.addEventListener('DOMContentLoaded', () => {
     const speelKnopStart = document.getElementById('speel-knop');
-    if (speelKnopStart) {
-        speelKnopStart.addEventListener('click', startSpel);
-    }
+    if (speelKnopStart) speelKnopStart.addEventListener('click', startSpel);
 });

@@ -28,11 +28,9 @@ class GameManager:
             player_id = event.get("player_id")
             existing_ids = {p.id for p in self.players}
             
-            # NIEUW: Automatisch een stoel uitdelen als speler_id "null" is (nieuwe speler)
             if player_id is None:
                 free_id = next((i for i in range(4) if i not in existing_ids), None)
                 if free_id is None:
-                    print("❌ Lobby is vol, nieuwe speler geweigerd.")
                     return
                 player_id = free_id
             
@@ -41,8 +39,6 @@ class GameManager:
             
             if event.get("_websocket"):
                 self.comm.register_websocket_player(event["_websocket"], player_id)
-                
-                # Stuur DIRECT de definitieve spelers-ID terug naar de browser!
                 self._create_async_task(self.comm.send_player_message(player_id, {
                     "type": "ASSIGNED_PLAYER_ID",
                     "player_id": player_id
@@ -59,7 +55,8 @@ class GameManager:
                 event.get("card"),
                 event.get("pion_id"),
                 event.get("pion2_id"),
-                event.get("movePawn2")
+                event.get("movePawn2"),
+                event.get("target_player_id")
             )
     
     async def broadcast_player_count(self):
@@ -78,14 +75,36 @@ class GameManager:
             return f"E{stap}"
         return str(pawn.position + 1)
 
+    def get_all_pawns_status(self):
+        status = {}
+        for p in self.players:
+            status[str(p.id)] = []
+            for i, pawn in enumerate(p.pawns):
+                is_valid = False
+                if pawn.inPlay and pawn.position < 64 and pawn.position != pawn.startSpace:
+                    is_valid = True
+                
+                status[str(p.id)].append({
+                    "id": i,
+                    "label": self.format_pawn_label(pawn),
+                    "is_valid": is_valid
+                })
+        return status
+
     def broadcast_game_state(self):
+        alle_pionnen = self.get_all_pawns_status()
+        
         for player in self.players:
             pionnen_status = {}
             for i, pawn in enumerate(player.pawns):
                 pion_id_naam = f"pion-{i + 1}"
                 pionnen_status[pion_id_naam] = self.format_pawn_label(pawn)
             
-            update_bericht = { "type": "UPDATE_BORD", "pionnen": pionnen_status }
+            update_bericht = { 
+                "type": "UPDATE_BORD", 
+                "pionnen": pionnen_status,
+                "alle_pionnen": alle_pionnen
+            }
             self._create_async_task(self.comm.send_player_message(player.id, update_bericht))
     
     def broadcast_hands(self):
@@ -118,7 +137,7 @@ class GameManager:
         self.broadcast_hands()
         self.broadcast_game_state()
 
-    def playCard(self, player_id, card_data, pawn_id, pawn2_id=None, movePawn2=None):
+    def playCard(self, player_id, card_data, pawn_id, pawn2_id=None, movePawn2=None, target_player_id=None):
         try: player_id = int(player_id)
         except (TypeError, ValueError): return
 
@@ -131,17 +150,47 @@ class GameManager:
         if player is None or pawn_id is None or pawn_id < 0 or pawn_id >= len(player.pawns): return
 
         pawn = player.pawns[pawn_id]
-        
         pawn2 = None
-        if pawn2_id is not None:
+        card = Card(card_data["face"])
+        
+        # === NIEUW: Check voor onspeelbare Boer ===
+        if card.face == "J":
+            alle_pionnen = self.get_all_pawns_status()
+            has_own = any(p["is_valid"] for p in alle_pionnen.get(str(player.id), []))
+            has_enemy = any(any(p["is_valid"] for p in pawns) for pid, pawns in alle_pionnen.items() if pid != str(player.id))
+            
+            # Als hij echt niet gespeeld kan worden...
+            if not has_own or not has_enemy:
+                has_ace_or_king = any(c.face in ("A", "K") for c in player.cards)
+                has_unplayed_pawn = any(not p.inPlay for p in player.pawns)
+                
+                if has_ace_or_king and has_unplayed_pawn:
+                    # Speler wordt gedwongen in het spel te komen
+                    self._create_async_task(self.comm.send_player_message(player_id, {"type": "FOUT_ZET", "bericht": "Je kunt de Boer niet spelen. Je moet eerst een Aas of Koning spelen."}))
+                    return
+                else:
+                    # Gooi hem geruisloos in de prullenbak
+                    card_to_remove = next((c for c in player.cards if c.face == card.face), None)
+                    if card_to_remove: player.cards.remove(card_to_remove)
+                    self._create_async_task(self.comm.send_player_message(player_id, {"type": "MOVE_SUCCEEDED"}))
+                    self.endTurn()
+                    return
+        # ==========================================
+
+        if card.face == "J" and target_player_id is not None:
+            try:
+                target_player = next((p for p in self.players if p.id == int(target_player_id)), None)
+                if target_player and pawn2_id is not None:
+                    pawn2 = target_player.pawns[int(pawn2_id)]
+            except (ValueError, TypeError):
+                pass
+        elif pawn2_id is not None:
             try:
                 p2_id_int = int(pawn2_id)
                 if 0 <= p2_id_int < len(player.pawns):
                     pawn2 = player.pawns[p2_id_int]
             except (ValueError, TypeError):
                 pass 
-
-        card = Card(card_data["face"])
         
         if not pawn.inPlay and card.face not in ("A", "K"):
             has_ace_or_king = any(c.face in ("A", "K") for c in player.cards)

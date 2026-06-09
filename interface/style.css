@@ -513,3 +513,81 @@ body {
     top: -42px; /* Duwt de tekst boven het grijze pion-vakje */
     bottom: auto;
 }
+/* ============================================
+   BOER DYNAMISCHE POPUP STYLING
+   ============================================ */
+.boer-content {
+    max-width: 800px;
+    width: 90%;
+}
+#boer-tegenstanders-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin: 20px 0;
+    max-height: 50vh;
+    overflow-y: auto;
+}
+.boer-speler-rij {
+    background-color: rgba(0,0,0,0.1);
+    padding: 15px;
+    border-radius: 10px;
+}
+.boer-speler-titel {
+    margin-top: 0;
+    margin-bottom: 10px;
+    font-size: 20px;
+    text-align: left;
+}
+.boer-pionnen-container {
+    display: flex;
+    justify-content: space-around;
+}
+.boer-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    padding: 10px;
+    border-radius: 10px;
+    transition: 0.2s;
+}
+.boer-wrapper:hover:not(.ongeldig) {
+    background-color: rgba(0,0,0,0.2);
+}
+.boer-wrapper.geselecteerd-boer {
+    background-color: rgba(255, 255, 255, 0.4);
+    border: 2px solid white;
+}
+.boer-wrapper.ongeldig {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+.boer-label {
+    font-weight: bold;
+    font-size: 18px;
+    margin-bottom: 5px;
+}
+/* ABSOLUTE FORCEER-LAAG VOOR ALLE POPUPS */
+.popup-overlay {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    background-color: rgba(0, 0, 0, 0.85) !important;
+    z-index: 9999999 !important; /* Boven alles! */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.popup-container {
+    background-color: #f0f0f0 !important;
+    padding: 30px !important;
+    border-radius: 15px !important;
+    text-align: center !important;
+    box-shadow: 0 10px 50px rgba(0,0,0,1) !important;
+    z-index: 10000000 !important;
+    max-width: 90% !important;
+}
