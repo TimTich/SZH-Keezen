@@ -20,11 +20,16 @@ class Deck:
         self.max_cards = len(self.cards)
 
     def dealCards(self):
+
+        if len(self.cards) == 0:
+            self.shuffle()
         amount = None
         if self.max_cards == len(self.cards):
             amount = 5
         else:
             amount = 4
-        for _ in range(amount):
+        for index in range(amount):
             for player in self.players:
+                if index == 0:
+                    player.cards = []
                 player.cards.append(self.cards.pop())

@@ -23,10 +23,10 @@ class Board:
             self.spaces.append(Space(number + 65, player))
 
     def update(self, pawn, steps, switch = False):
-        self.spaces[pawn.position].occupiedBy = None
-        currentPawn = self.spaces[pawn.position + steps].occupiedBy
+        self.spaces[pawn.position].occupied_by = None
+        currentPawn = self.spaces[(pawn.position + steps) % 64].occupied_by
         if currentPawn and not switch:
             currentPawn.position = currentPawn.basePosition
             currentPawn.inPlay = False
-        self.spaces[pawn.position + steps].occupiedBy = pawn
+        self.spaces[(pawn.position + steps) % 64].occupied_by = pawn
     

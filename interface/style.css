@@ -156,9 +156,17 @@ body {
 }
 
 /* --- HOOFD ACTIE KNOP (Onder de kaarten) --- */
-.actie-knop {
+.actie-knoppen-rij {
     position: absolute;
-    top: 65%;
+    top: 55%;
+    left: 50%;
+    transform: translate(-50%);
+    display: flex;
+    gap: 40px;
+    z-index: 30;
+}
+
+.actie-knop {
     left: 50%;
     transform: translateX(-50%);
     padding: 20px 60px;
@@ -172,6 +180,18 @@ body {
     z-index: 40;
     font-size: 2.5rem;
     font-family: 'Arial Black', sans-serif;
+}
+
+#bevestig-knop {
+    top: 60%;
+    left: 50%;
+    transform: translateX(-25%);
+}
+
+#weggooien-knop {
+    top: 75%;
+    left: 50%;
+    transform: translateX(25%);
 }
 
 .actie-knop.uitgeschakeld {

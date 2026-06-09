@@ -196,6 +196,57 @@ class CommunicationManager:
         # Send to USB serials
         self._broadcast_usb_serial(message)
 
+    async def broadcast_current_turn(self, player_id):
+        """Broadcast the current player's turn to all clients."""
+        message = {
+            "type": "CURRENT_TURN",
+            "player_id": player_id
+        }
+        # First try to send directly to the registered player websocket (if present)
+        print(f"DEBUG: Broadcasting CURRENT_TURN for player {player_id}. player_clients={list(self.player_clients.keys())}")
+        try:
+            if player_id in self.player_clients:
+                await self.player_clients[player_id].send(json.dumps(message))
+                print(f"Sent CURRENT_TURN directly to player {player_id}")
+        except Exception as e:
+            print(f"Error sending CURRENT_TURN to player {player_id}: {e}")
+
+        # Always broadcast as a fallback so all clients (including unregistered/fallback clients) get the update
+        await self._broadcast_websocket(message)
+
+    async def broadcast_player_positions(self, player):
+        """Send this player's pawn positions to that player's UI."""
+        pionnen = {}
+        for pawn in player.pawns:
+            pionnen[f"pion-{pawn.id + 1}"] = pawn.position
+        message = {
+            "type": "UPDATE_BORD",
+            "pionnen": pionnen
+        }
+        if player.id in self.player_clients:
+            try:
+                await self.player_clients[player.id].send(json.dumps(message))
+                print(f"Sent UPDATE_BORD to player {player.id}: {pionnen}")
+            except Exception as e:
+                print(f"Error sending UPDATE_BORD to player {player.id}: {e}")
+        else:
+            print(f"Warning: Player {player.id} has no connected websocket for pawn update")
+
+    async def send_player_error(self, player_id, message_text):
+        """Send an error message to a specific player."""
+        message = {
+            "type": "FOUT_ZET",
+            "bericht": message_text
+        }
+        if player_id in self.player_clients:
+            try:
+                await self.player_clients[player_id].send(json.dumps(message))
+                print(f"Sent FOUT_ZET to player {player_id}: {message_text}")
+            except Exception as e:
+                print(f"Error sending FOUT_ZET to player {player_id}: {e}")
+        else:
+            print(f"Warning: Player {player_id} not connected when sending error")
+
     async def broadcast_hand(self, player_id, cards):
         """Broadcast dealt hand to a specific player"""
         # Convert card objects to their face values (strings)

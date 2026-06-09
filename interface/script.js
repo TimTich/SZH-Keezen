@@ -7,6 +7,10 @@ const piAddress = `ws://${window.location.hostname}:8765`;
 let socket;
 // Het server-side systeem wijst een speler-ID toe op basis van join-orde.
 let spelerId;
+let myTurn = false;
+let lastCurrentPlayer = null;
+let pendingCardWrapper = null;
+let awaitingMoveResponse = false;
 
 function verbindMetPi() {
     socket = new WebSocket(piAddress);
@@ -28,6 +32,13 @@ function verbindMetPi() {
             if (data.type === "PLAYER_ASSIGNED") {
                 spelerId = data.player_id;
                 console.log(`Speler-ID toegewezen: ${spelerId}`);
+                // If we already know who had the current turn, update state now
+                if (lastCurrentPlayer !== null) {
+                    myTurn = (lastCurrentPlayer === spelerId);
+                    console.log(`After assignment, myTurn=${myTurn} (lastCurrentPlayer=${lastCurrentPlayer}, spelerId=${spelerId})`);
+                    updateTurnState(lastCurrentPlayer);
+                    checkSelecties();
+                }
                 return;
             }
 
@@ -45,18 +56,37 @@ function verbindMetPi() {
                 }
             }
 
+            if (data.type === "CURRENT_TURN") {
+                console.log(`Received CURRENT_TURN: server=${data.player_id}, local spelerId=${spelerId}`, typeof data.player_id, typeof spelerId);
+                lastCurrentPlayer = data.player_id;
+                myTurn = (data.player_id === spelerId);
+                if (awaitingMoveResponse) {
+                    awaitingMoveResponse = false;
+                    pendingCardWrapper = null;
+                }
+                console.log(`myTurn now: ${myTurn}`);
+                updateTurnState(data.player_id);
+                checkSelecties();
+                return;
+            }
+
             if (data.type === "NIEUWE_HAND") {
                 tekenKaarten(data.kaarten); // Tekent de 4 of 5 nieuwe kaarten
+                return;
             }
             else if (data.type === "UPDATE_BORD") {
                 updatePionPosities(data.pionnen); // Past de cijfertjes op de pionnen aan
+                return;
             }
             else if (data.type === "FOUT_ZET") {
                 alert(data.bericht); // Laat de waarschuwing van de Pi zien
+                restorePendingCard();
+                awaitingMoveResponse = false;
                 // Haal de groene randjes weg zodat de speler opnieuw kan kiezen
                 document.querySelectorAll('.speelkaart-wrapper.geselecteerd').forEach(w => w.classList.remove('geselecteerd'));
                 document.querySelectorAll('.pion.geselecteerd').forEach(p => p.classList.remove('geselecteerd'));
                 checkSelecties();
+                return;
             }
         } catch (err) {
             console.error('Fout tijdens verwerken van onmessage:', err, event.data);
@@ -95,12 +125,14 @@ function tekenKaarten(hand) {
         const wrapper = document.createElement('div');
         wrapper.className = 'speelkaart-wrapper';
         
-        if (waarde === 'gespeeld') {
+        // Treat both 'gespeeld' and '15' as empty cards (show back of card)
+        if (waarde === 'gespeeld' || waarde === '15') {
             const img = document.createElement('img');
+            img.className = 'speelkaart-img';
             img.src = 'kaart15.png'; // Achterkant
             wrapper.appendChild(img);
-            wrapper.classList.add('gespeeld');
-            wrapper.style.cursor = 'default';
+            //wrapper.classList.add('gespeeld');
+            //wrapper.style.cursor = 'default';
         } else {
             const img = document.createElement('img');
             // Vertaling van de Pi ('A', 'K') naar jouw plaatjes ('kaart14.png')
@@ -135,6 +167,10 @@ function updatePionPosities(pionnenData) {
 }
 
 function selecteerKaart(el) {
+    if (!myTurn) {
+        console.warn('Niet jouw beurt');
+        return;
+    }
     document.querySelectorAll('.speelkaart-wrapper').forEach(w => w.classList.remove('geselecteerd'));
     el.classList.add('geselecteerd');
     
@@ -149,6 +185,10 @@ function selecteerKaart(el) {
 }
 
 function selecteerPion(el) {
+    if (!myTurn) {
+        console.warn('Niet jouw beurt');
+        return;
+    }
     const geselecteerdeKaart = document.querySelector('.speelkaart-wrapper.geselecteerd img');
     const kaartNaam = geselecteerdeKaart ? geselecteerdeKaart.alt : "";
     
@@ -174,10 +214,38 @@ function checkSelecties() {
     const aantalPionnen = document.querySelectorAll('.pion.geselecteerd').length;
     const bevestigKnop = document.getElementById('bevestig-knop');
 
+    const weggooienKnop = document.getElementById('weggooien-knop');
+    if (!myTurn) {
+        bevestigKnop.classList.add('uitgeschakeld');
+        if (weggooienKnop) {
+            weggooienKnop.classList.add('uitgeschakeld');
+        }
+        return;
+    }
+
+    const canDiscard = geselecteerdeKaart && myTurn;
+
     if (kaartNaam === '7') {
         (aantalPionnen === 2) ? bevestigKnop.classList.remove('uitgeschakeld') : bevestigKnop.classList.add('uitgeschakeld');
     } else {
         (geselecteerdeKaart && aantalPionnen === 1) ? bevestigKnop.classList.remove('uitgeschakeld') : bevestigKnop.classList.add('uitgeschakeld');
+    }
+
+    if (weggooienKnop) {
+        canDiscard ? weggooienKnop.classList.remove('uitgeschakeld') : weggooienKnop.classList.add('uitgeschakeld');
+    }
+}
+
+function updateTurnState(currentPlayerId) {
+    const instructie = document.getElementById('instructie-tekst');
+    if (spelerId === undefined) {
+        instructie.innerText = 'Wachten op speler-ID...';
+        return;
+    }
+    if (myTurn) {
+        instructie.innerText = 'Jouw beurt';
+    } else {
+        instructie.innerText = `Beurt van speler ${currentPlayerId}`;
     }
 }
 
@@ -204,7 +272,10 @@ function speelZet() {
         // We spelen een normale kaart
         const pion = document.querySelector('.pion.geselecteerd');
         const pionIdNummer = parseInt(pion.dataset.id.replace('pion-', '')) - 1; // Maakt er 0, 1, 2 of 3 van voor de Pi
-        
+        const kaartWrapper = document.querySelector('.speelkaart-wrapper.geselecteerd');
+        pendingCardWrapper = kaartWrapper;
+        awaitingMoveResponse = true;
+
         // Stuur de zet naar de Pi!
         verstuurBericht({
             type: "CARD_PLAYED",
@@ -229,6 +300,9 @@ function bevestig7Zet() {
     if(pionnen.length === 2) {
         const pion1Id = parseInt(pionnen[0].dataset.id.replace('pion-', '')) - 1;
         const pion2Id = parseInt(pionnen[1].dataset.id.replace('pion-', '')) - 1;
+        const kaartWrapper = document.querySelector('.speelkaart-wrapper.geselecteerd');
+        pendingCardWrapper = kaartWrapper;
+        awaitingMoveResponse = true;
 
         verstuurBericht({
             type: "CARD_PLAYED",
@@ -256,6 +330,9 @@ function bevestigBoerZet() {
 
     if (eigenPion && vijandigePion) {
         const pionId = parseInt(eigenPion.dataset.id.replace('pion-', '')) - 1;
+        const kaartWrapper = document.querySelector('.speelkaart-wrapper.geselecteerd');
+        pendingCardWrapper = kaartWrapper;
+        awaitingMoveResponse = true;
         
         verstuurBericht({
             type: "CARD_PLAYED",
@@ -281,6 +358,42 @@ function draaiGeselecteerdeKaartOm() {
         updateInstructie();
         checkSelecties();
     }
+}
+
+function weggooien() {
+    const geselecteerdeKaart = document.querySelector('.speelkaart-wrapper.geselecteerd img');
+    if (!myTurn || !geselecteerdeKaart || spelerId === undefined) return;
+
+    const kaartNaam = geselecteerdeKaart.alt;
+    const kaartWrapper = document.querySelector('.speelkaart-wrapper.geselecteerd');
+    pendingCardWrapper = kaartWrapper;
+    awaitingMoveResponse = true;
+
+    verstuurBericht({
+        type: "CARD_PLAYED",
+        player_id: spelerId,
+        card: { face: kaartNaam },
+        discard: true
+    });
+
+    draaiGeselecteerdeKaartOm();
+}
+
+function restorePendingCard() {
+    if (!pendingCardWrapper) return;
+
+    const img = pendingCardWrapper.querySelector('img');
+    if (img && img.alt) {
+        let waarde = img.alt;
+        if (waarde === 'J') waarde = '11';
+        if (waarde === 'Q') waarde = '12';
+        if (waarde === 'K') waarde = '13';
+        if (waarde === 'A') waarde = '14';
+        img.src = `kaart${waarde}.png`;
+    }
+    pendingCardWrapper.classList.remove('gespeeld');
+    pendingCardWrapper.classList.remove('geselecteerd');
+    pendingCardWrapper = null;
 }
 
 // ============================================

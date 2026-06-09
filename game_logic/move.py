@@ -18,12 +18,14 @@ def moveOnePawn(board, steps, pawn):
     if checkMove(board, pawn, steps + 1):
         board.update(pawn, steps)
         pawn.updatePosition(steps)
+        return True
     return False
 
 def moveBack(board, steps, pawn):
     if checkMove(board, pawn, steps - 1, -1):
         board.update(pawn, steps)
         pawn.updatePosition(steps)
+        return True
     return False
 
 def splitSeven(board, pawn, pawn2, movePawn2):
@@ -58,17 +60,30 @@ def enterPlay(board, pawn):
 def checkMove(board, pawn, steps, direction = 1):
     endZone = pawn.position <= 80 and pawn.position >= 64;
     stepsTaken = 0
-    for step in range(1, steps, direction):
+    id = None
+    start = 1
+    if direction == -1:
+        start = -1
+    for step in range(start, steps, direction):
         if endZone:
             if pawn.endZoneStart + stepsTaken >= len(board.spaces) or step - stepsTaken > 4:
                 return False
-            space = board.spaces[pawn.endZoneStart + stepsTaken]
+            space = board.spaces[pawn.endZoneStart + (step - stepsTaken)]
+            print(f"Checking end zone space {space.number} for pawn {pawn.id} with step {step} and stepsTaken {stepsTaken}")
+            if step == steps - 1:
+                return True
+                
         else:
             space = board.spaces[(pawn.position + step) % 64]
-        if space.number == pawn.startSpace - 1 or (space.number == 64 and pawn.owner == 0):
+            print(f"Checking board space {space.number} for pawn {pawn.id} with step {step} and stepsTaken {stepsTaken}")
+        if space.number == (pawn.startSpace - 1) % 64:
             endZone = True
             stepsTaken = step
-        if (space.occuiedBy and space.occupiedBy.owner == space.owner.id): #No check for end zone yet
+            print(f"Pawn {pawn.id} has entered the end zone, switching to end zone spaces")
+        if space.owner:
+            id = space.owner.id
+        if (space.occupied_by and space.occupied_by.owner == id): #No check for end zone yet
+            print(f"Move blocked by pawn {space.occupied_by.id} owned by player {id} at space {space.number}")
             return False
     return True
 
