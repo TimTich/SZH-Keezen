@@ -20,7 +20,8 @@ class Board:
                 
         for number in range(32):
             expected_id = (number // 4) % 4
-            owner = player_dict.get(expected_id, None)
+            index = 0 if expected_id == 0 else 2 if expected_id == 1 else 1 if expected_id == 2 else 3
+            owner = player_dict.get(index, None)
             pawn = owner.pawns[number // 4 % 4] if owner else None
             self.spaces.append(Space(number + 65, owner, pawn))
 
@@ -44,4 +45,5 @@ class Board:
                 player_spaces.append(int(space.occupied_by.owner))
             else:
                 player_spaces.append(None)
+        print("Player spaces:", player_spaces)  # Debug output
         return player_spaces
