@@ -212,20 +212,6 @@ body {
     z-index: 45;
 }
 
-.stop-knop {
-    position: absolute;
-    bottom: 10vh;
-    left: 50%;
-    transform: translateX(-50%);
-    padding: 15px 40px;
-    background: #444;
-    color: white;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    pointer-events: auto !important;
-}
-
 /* =======================================================
    NIEUWE ACTIE KNOPPEN CONTAINER (SPEEL & GOOI WEG FIX)
    ======================================================= */
@@ -238,9 +224,9 @@ body {
     justify-content: center;
     gap: 30px;
     align-items: center;
-    width: fit-content; /* Krimpt strak om de knoppen heen zodat de hoeken vrij blijven */
+    width: fit-content; 
     z-index: 1000;
-    pointer-events: none; /* Kliks vallen dwars door de lege container heen naar de pionnen! */
+    pointer-events: none; 
 }
 
 .actie-knop {
@@ -256,10 +242,9 @@ body {
     box-shadow: 0 10px 20px rgba(0,0,0,0.4);
     transition: transform 0.2s, background 0.2s, box-shadow 0.2s;
     font-family: 'Arial Black', sans-serif;
-    pointer-events: auto; /* Maakt de knoppen zelf uiteraard wél weer klikbaar */
+    pointer-events: auto; 
 }
 
-/* Uitgeschakelde knop-status */
 .actie-knop.uitgeschakeld {
     background: #333 !important;
     border-color: #555 !important;
@@ -348,7 +333,7 @@ body {
     border-bottom: 5px solid black; 
 }
 .popup-pion-vak {
-    width: 250px; /* Iets verbreed voor de dubbele labels */
+    width: 250px; 
     border-right: 5px solid black;
     display: flex;
     justify-content: center;
@@ -385,7 +370,7 @@ body {
 }
 #boer-tegenstanders-container {
     display: flex;
-    flex-direction: row; /* Zet alle tegenstanders netjes naast elkaar */
+    flex-direction: row; 
     justify-content: center;
     gap: 15px;
     margin: 20px 0;
@@ -409,7 +394,7 @@ body {
 }
 .boer-pionnen-container {
     display: grid;
-    grid-template-columns: repeat(2, 1fr); /* Compact 2x2 grid voorkomt scrollen */
+    grid-template-columns: repeat(2, 1fr); 
     gap: 15px;
     justify-items: center;
 }
@@ -446,7 +431,7 @@ body {
 }
 
 /* =======================================================
-   --- STYLING VOOR DE UITLEG SCHERMEN EN KNOPPEN --- 
+   --- INTERFACE & UITLEG POP-UPS (NO SCROLL UPGRADE) --- 
    ======================================================= */
 .start-knoppen-rij {
     display: flex;
@@ -466,6 +451,7 @@ body {
     box-shadow: 0 8px 15px rgba(0,0,0,0.5);
     text-transform: uppercase;
     transition: all 0.2s ease;
+    pointer-events: auto !important; /* Forceert de klikbaarheid op het startscherm */
 }
 .uitleg-knop:hover {
     transform: scale(1.05);
@@ -475,32 +461,34 @@ body {
     transform: translateY(8px);
     box-shadow: 0 0px 0px rgba(0,0,0,0.5);
 }
+
 .tekst-container {
-    padding: 40px 60px; 
+    padding: 20px 40px !important; 
     text-align: left;
-    width: 95vw;  
-    height: 95vh; 
+    width: 850px !important;  
+    max-width: 90% !important;
+    max-height: 88vh !important; /* Krimpt de container strak binnen het tabletscherm */
     margin-bottom: 0 !important; 
     display: flex;
     flex-direction: column;
     justify-content: space-between; 
 }
 .tekst-container h2 {
-    font-size: 3.5rem;
+    font-size: 2.8rem; /* Iets compacter gemaakt */
     margin-top: 0;
-    margin-bottom: 15px;
+    margin-bottom: 10px;
     color: #222;
     text-align: center;
     border-bottom: 4px solid #222;
-    padding-bottom: 10px;
+    padding-bottom: 8px;
     flex-shrink: 0; 
 }
 .tekst-inhoud {
     font-family: 'Arial', sans-serif;
-    font-size: 1.6rem; 
-    line-height: 1.6;
+    font-size: 1.35rem; /* Zorgt dat de regels korter zijn en alles gegarandeerd past */
+    line-height: 1.45;
     color: #111;
-    overflow: hidden; 
+    overflow: hidden !important; /* Blokkeert verticale schuifbalken */
     flex-grow: 1; 
     display: flex;
     flex-direction: column;
@@ -508,13 +496,13 @@ body {
 }
 .tekst-inhoud ul {
     background-color: #f5f5f5;
-    padding: 25px 40px;
-    border-radius: 15px;
+    padding: 15px 35px; /* Compactere lijst-ruimte */
+    border-radius: 12px;
     border: 2px solid #ccc;
-    margin: 20px 0;
+    margin: 5px 0;
 }
 .tekst-inhoud li {
-    margin-bottom: 15px;
+    margin-bottom: 8px;
 }
 .terug-knop {
     position: relative; 
@@ -522,8 +510,9 @@ body {
     bottom: auto;
     transform: none;
     align-self: center; 
-    padding: 15px 100px;
-    margin-top: 20px;
+    padding: 12px 80px !important;
+    font-size: 2rem !important;
+    margin-top: 10px;
     flex-shrink: 0; 
 }
 

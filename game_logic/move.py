@@ -146,6 +146,6 @@ def bereken_route(board, pawn, steps):
 def getSteps(card):
     if (card.face == "4"): return -4
     elif (card.face == "A"): return 1
-    elif (card.face == "Q"): return 13
+    elif (card.face == "Q"): return 12
     elif (card.face == "K"): return 0
     else: return int(card.face)

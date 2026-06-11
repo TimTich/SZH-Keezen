@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Keezen Control Hub</title>
-    <link rel="stylesheet" href="style.css?v=70">
+    <link rel="stylesheet" href="style.css?v=80">
 </head>
 <body>
     <div id="start-scherm" class="container">
@@ -38,7 +38,6 @@
 
         <div id="jouw-speler-game" class="jouw-speler-klein">Aanmelden...</div>
 
-        <!-- 7 POPUP -->
         <div id="popup-7" class="popup-overlay verborgen">
             <div class="popup-container">
                 <div class="popup-rij">
@@ -59,7 +58,6 @@
             </div>
         </div>
 
-        <!-- BOER POPUP -->
         <div id="popup-boer" class="popup-overlay verborgen">
             <div class="popup-container boer-content">
                 <h2 style="color: black; margin-bottom: 20px;">KIES EEN PION OM MEE TE RUILEN</h2>
@@ -72,12 +70,45 @@
         </div>
     </div>
 
-    <!-- HET WIN SCHERM (ZONDER NIEUW SPEL KNOP) -->
+    <div id="uitleg-keezen-scherm" class="popup-overlay verborgen">
+        <div class="popup-container tekst-container">
+            <h2>UITLEG KEEZEN</h2>
+            <div class="tekst-inhoud">
+                <ul>
+                    <li><strong>Aas / Heer (A / K):</strong> Pion op het startveld ('B') zetten. Aas mag ook 1 stap vooruit.</li>
+                    <li><strong>Boer (J):</strong> Verplicht ruilen met een pion van een tegenstander.</li>
+                    <li><strong>Vrouw (Q):</strong> 12 stappen vooruit lopen.</li>
+                    <li><strong>Vier (4):</strong> 4 stappen ACHTERUIT lopen.</li>
+                    <li><strong>Zeven (7):</strong> Stappen splitsen over 2 verschillende pionnen.</li>
+                    <li><strong>Overig (2-10):</strong> Normaal aantal stappen vooruit lopen.</li>
+                    <li><strong>Eindbasis (E1-E4):</strong> Krijg alle 4 je pionnen hierin om te winnen!</li>
+                </ul>
+            </div>
+            <button class="popup-speel-knop terug-knop" onclick="sluitUitlegKeezen()">TERUG</button>
+        </div>
+    </div>
+
+    <div id="uitleg-ui-scherm" class="popup-overlay verborgen">
+        <div class="popup-container tekst-container">
+            <h2>UITLEG INTERFACE</h2>
+            <div class="tekst-inhoud">
+                <ul>
+                    <li><strong>Kaart kiezen:</strong> Klik op een kaart in je hand om hem te selecteren.</li>
+                    <li><strong>Pion kiezen:</strong> Klik op een pion op het bord om ermee te lopen.</li>
+                    <li><strong>SPEEL Knop:</strong> Wordt rood zodra je een geldige zet hebt klaargezet.</li>
+                    <li><strong>GOOI WEG Knop:</strong> Wordt actief als je de kaart écht nergens kunt spelen.</li>
+                    
+                </ul>
+            </div>
+            <button class="popup-speel-knop terug-knop" onclick="sluitUitlegUI()">TERUG</button>
+        </div>
+    </div>
+
     <div id="win-scherm" class="verborgen">
         <h1 class="win-titel" id="win-hoofdtekst">JIJ HEBT GEWONNEN!</h1>
         <h2 id="win-subtitel" style="color: white; font-size: 3rem;">Gefeliciteerd!</h2>
     </div>
 
-    <script src="script.js?v=70"></script>
+    <script src="script.js?v=80"></script>
 </body>
 </html>
