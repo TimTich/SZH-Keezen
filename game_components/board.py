@@ -45,5 +45,4 @@ class Board:
                 player_spaces.append(int(space.occupied_by.owner))
             else:
                 player_spaces.append(None)
-        print("Player spaces:", player_spaces)  # Debug output
         return player_spaces
