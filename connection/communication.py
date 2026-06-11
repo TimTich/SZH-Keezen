@@ -15,6 +15,7 @@ class CommunicationManager:
     def __init__(self, event_queue: Optional[Queue] = None):
         self.websocket_clients: List = []
         self.websocket_player_map: Dict = {}
+        self.usb_player_map: Dict[str, int] = {}
         self.usb_serials: Dict[str, serial.Serial] = {}
         self.event_queue = event_queue
         self.usb_listener_threads: Dict[str, threading.Thread] = {}
@@ -46,6 +47,25 @@ class CommunicationManager:
                 return client
         return None
 
+    def get_player_usb(self, player_id):
+        """Return the USB serial port for a given player ID."""
+        for port, pid in self.usb_player_map.items():
+            if pid == player_id:
+                return port
+        return None
+
+    def register_usb_player(self, port: str, player_id: int):
+        """Link a USB serial port to a player ID."""
+        if port in self.usb_serials:
+            self.usb_player_map[port] = player_id
+            print(f"USB serial port {port} registered for player {player_id}")
+
+    def get_all_mapped_player_ids(self):
+        """Return all player IDs currently mapped to sockets or USB devices."""
+        player_ids = set(self.websocket_player_map.values())
+        player_ids.update(self.usb_player_map.values())
+        return player_ids
+
     async def _send_websocket_message(self, client, message: Dict):
         """Send a JSON message to a single websocket client."""
         try:
@@ -55,12 +75,26 @@ class CommunicationManager:
             self.remove_websocket_client(client)
 
     async def send_player_message(self, player_id, message: Dict):
-        """Send a message only to the websocket client of a specific player."""
+        """Send a message to any connected client for a given player ID."""
+        sent = False
+
         client = self.get_player_websocket(player_id)
         if client:
             await self._send_websocket_message(client, message)
-        else:
-            print(f"No websocket client found for player {player_id}")
+            sent = True
+
+        usb_port = self.get_player_usb(player_id)
+        if usb_port:
+            ser = self.usb_serials.get(usb_port)
+            if ser:
+                try:
+                    ser.write((json.dumps(message) + "\n").encode("utf-8"))
+                    sent = True
+                except Exception as e:
+                    print(f"Error sending message to USB serial {usb_port}: {e}")
+
+        if not sent:
+            print(f"No connected client found for player {player_id}")
     
     def register_usb_serial(self, port: str, baudrate: int = 9600) -> bool:
         """Register a USB serial connection"""
@@ -82,6 +116,7 @@ class CommunicationManager:
             try:
                 self.usb_serials[port].close()
                 del self.usb_serials[port]
+                self.usb_player_map.pop(port, None)
                 print(f"USB serial disconnected from port {port}")
                 return True
             except Exception as e:
@@ -132,6 +167,7 @@ class CommunicationManager:
                             try:
                                 event = json.loads(buffer)
                                 if self.event_queue:
+                                    event["_usb_port"] = port
                                     self.event_queue.put(event)
                                     print(f"Added USB serial event from {port} to queue: {event['type']}")
                                 else:

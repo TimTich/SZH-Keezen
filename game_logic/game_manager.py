@@ -22,48 +22,71 @@ class GameManager:
         except RuntimeError:
             pass
 
+    def _register_connection_for_player(self, event, player_id):
+        """Register the incoming connection for the given player ID."""
+        if event.get("_websocket"):
+            self.comm.register_websocket_player(event["_websocket"], player_id)
+        if event.get("_usb_port"):
+            self.comm.register_usb_player(event["_usb_port"], player_id)
+
+        if event.get("_websocket") or event.get("_usb_port"):
+            self._create_async_task(self.comm.send_player_message(player_id, {
+                "type": "ASSIGNED_PLAYER_ID",
+                "player_id": player_id
+            }))
+
+    def _resolve_join_player_id(self, event, max_players=4):
+        """Resolve a unique player ID for a join event without causing collisions."""
+        requested_id = event.get("player_id")
+        try:
+            requested_id = int(requested_id) if requested_id is not None else None
+        except (TypeError, ValueError):
+            requested_id = None
+
+        mapped_ids = self.comm.get_all_mapped_player_ids()
+
+        if requested_id is not None:
+            already_mapped = requested_id in mapped_ids
+            if not already_mapped:
+                return requested_id
+
+            # Allow reconnect from the same websocket or USB device for the same ID.
+            if event.get("_websocket"):
+                existing_ws = self.comm.get_player_websocket(requested_id)
+                if existing_ws == event["_websocket"]:
+                    return requested_id
+            if event.get("_usb_port"):
+                existing_port = self.comm.get_player_usb(requested_id)
+                if existing_port == event["_usb_port"]:
+                    return requested_id
+
+        return next((i for i in range(max_players) if i not in mapped_ids), None)
+
     def handleEvent(self, event):
         t = event["type"]
         if t == "PLAYER_JOIN":
-            player_id = event.get("player_id")
-            
+            player_id = self._resolve_join_player_id(event)
+
+            if player_id is None:
+                return
+
             if not self.game_started:
                 # Spel is nog niet gestart: voeg spelers normaal toe
                 existing_ids = {p.id for p in self.players}
-                
-                if player_id is None:
-                    free_id = next((i for i in range(4) if i not in existing_ids), None)
-                    if free_id is None:
-                        return
-                    player_id = free_id
-                
                 if player_id not in existing_ids:
                     self.players.append(Player("player" + str(player_id), player_id))
-                
-                if event.get("_websocket"):
-                    self.comm.register_websocket_player(event["_websocket"], player_id)
-                    self._create_async_task(self.comm.send_player_message(player_id, {
-                        "type": "ASSIGNED_PLAYER_ID",
-                        "player_id": player_id
-                    }))
-                    
+
+                self._register_connection_for_player(event, player_id)
                 self._create_async_task(self.broadcast_player_count())
             else:
                 # FIX: Het spel is al gestart! Koppel de telefoon direct aan een vrije speler-positie
-                if player_id is None:
-                    mapped_pids = set(self.comm.websocket_player_map.values())
-                    player_id = next((i for i in range(len(self.players)) if i not in mapped_pids), 0)
-                
-                if event.get("_websocket"):
-                    self.comm.register_websocket_player(event["_websocket"], player_id)
-                    self._create_async_task(self.comm.send_player_message(player_id, {
-                        "type": "ASSIGNED_PLAYER_ID",
-                        "player_id": player_id
-                    }))
-                    # Stuur direct je kaarten en de bord-status naar je telefoon zodat de knoppen activeren!
-                    self.broadcast_hands()
-                    self.broadcast_game_state()
-                    self._create_async_task(self.broadcast_current_player())
+                if player_id >= len(self.players):
+                    return
+
+                self._register_connection_for_player(event, player_id)
+                self.broadcast_hands()
+                self.broadcast_game_state()
+                self._create_async_task(self.broadcast_current_player())
 
         elif t == "CONFIRM_START":
             self.startGame()
