@@ -35,3 +35,13 @@ class Board:
             currentPawn.clear_entry_card()
             
         target_space.occupied_by = pawn
+
+    def getPlayerSpaces(self):
+        player_spaces = []
+        for space in self.spaces:
+            if space.occupied_by and int(space.occupied_by.owner.id):
+                player_spaces.append(int(space.occupied_by.owner.id))
+            else:
+                player_spaces.append(None)
+            print(f"Space {space.number}: Occupied by player {space.occupied_by.owner.id if space.occupied_by else 'None'}")
+        return player_spaces

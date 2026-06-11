@@ -185,6 +185,11 @@ class GameManager:
         message = {"type": "CURRENT_PLAYER", "player_id": self.players[self.current_player_index].id}
         await self.comm._broadcast_websocket(message)
 
+    def broadcast_board(self):
+        if self.board:
+            message = {"type": "BOARD_STATE", "spaces": self.board.getPlayerSpaces()}
+            self._create_async_task(self.comm._broadcast_websocket(message))
+
     def format_pawn_label(self, pawn):
         if pawn.position >= 80: return "B"
         if 64 <= pawn.position <= 79:
@@ -272,6 +277,7 @@ class GameManager:
         self._create_async_task(self.broadcast_current_player())
         self.broadcast_hands()
         self.broadcast_game_state()
+        self.broadcast_board()
 
     def playCard(self, player_id, card_data, pawn_id, pawn2_id=None, movePawn2=None, target_player_id=None):
         try: player_id = int(player_id)
@@ -387,3 +393,4 @@ class GameManager:
         self.broadcast_hands()
         self._create_async_task(self.broadcast_current_player())
         self.broadcast_game_state()
+        self.broadcast_board()
