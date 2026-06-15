@@ -67,7 +67,6 @@ function verbindMetPi() {
             document.querySelectorAll('.pion.geselecteerd').forEach(p => p.classList.remove('geselecteerd'));
             checkSelecties();
         }
-        // NIEUW: De Win Activering!
         else if (data.type === "GAME_WON") {
             document.getElementById('spel-scherm').classList.add('verborgen');
             const winScherm = document.getElementById('win-scherm');
@@ -115,12 +114,12 @@ function updateHuidigeBeurt(playerId) {
 }
 
 function updateBeurtStatus() {
-    const bevestigKnop = document.getElementById('bevestig-knop');
+    constGrid = document.getElementById('bevestig-knop');
     const jouwSpelerGameElement = document.getElementById('jouw-speler-game');
     
-    if (bevestigKnop) {
-        if (spelerId === huidigeSpeler) bevestigKnop.classList.remove('uitgeschakeld');
-        else bevestigKnop.classList.add('uitgeschakeld');
+    if (constGrid) {
+        if (spelerId === huidigeSpeler) constGrid.classList.remove('uitgeschakeld');
+        else constGrid.classList.add('uitgeschakeld');
     }
     if (jouwSpelerGameElement) {
         const weergaveId = spelerId + 1;
@@ -307,6 +306,9 @@ function checkSelecties() {
     }
 }
 
+// ============================================
+// UPGRADE: STUURT NU OOK JOUW BORD-POSITIES MEE
+// ============================================
 function gooiKaartWeg() {
     if (spelerId !== huidigeSpeler) return;
     
@@ -315,10 +317,19 @@ function gooiKaartWeg() {
 
     const geselecteerdeKaart = kaartElement.alt; 
     
+    // Haal direct de posities van jouw 4 pionnen van het scherm af
+    const huidigePosities = [
+        document.querySelector("[data-id='pion-1'] .pos-label").innerText,
+        document.querySelector("[data-id='pion-2'] .pos-label").innerText,
+        document.querySelector("[data-id='pion-3'] .pos-label").innerText,
+        document.querySelector("[data-id='pion-4'] .pos-label").innerText
+    ];
+    
     verstuurBericht({
         type: "DISCARD_CARD",
         player_id: spelerId,
-        card: { face: geselecteerdeKaart }
+        card: { face: geselecteerdeKaart },
+        posities: huidigePosities 
     });
 }
 
@@ -347,7 +358,6 @@ function speelZet() {
                 pion_id: pionIdNummer
             });
         } else if (pionnen.length === 2) {
-            // NIEUW: Pak de labels van de pionnen en stuur ze door naar de 7-popup!
             const lbl1 = pionnen[0].querySelector('.pos-label') ? pionnen[0].querySelector('.pos-label').innerText : "?";
             const lbl2 = pionnen[1].querySelector('.pos-label') ? pionnen[1].querySelector('.pos-label').innerText : "?";
             open7Popup(lbl1, lbl2);
@@ -447,9 +457,7 @@ function draaiAlleKaartenOm() {
     checkSelecties();
 }
 
-/* ============================================
-   7 POPUP
-   ============================================ */
+/* --- 7 POPUP --- */
 let stappenPionBoven = 0; 
 let stappenPionOnder = 0;
 
@@ -459,7 +467,6 @@ function open7Popup(label1, label2) {
     stappenPionBoven = 0;
     stappenPionOnder = 0;
     
-    // Injecteer de labels naast de pionnen
     document.getElementById('label-7-boven').innerText = label1 || "?";
     document.getElementById('label-7-onder').innerText = label2 || "?";
     
@@ -503,9 +510,7 @@ function teken7Stappen() {
     }
 }
 
-/* ============================================
-   DE BOER (J) DYNAMISCHE POPUP
-   ============================================ */
+/* --- DE BOER (J) DYNAMISCHE POPUP --- */
 let geselecteerdeBoerPionInfo = null;
 
 function openBoerPopup() {
@@ -612,11 +617,7 @@ function bevestigBoerZet() {
     }
 }
 
-function stopSpel() {
-    document.getElementById('spel-scherm').classList.add('verborgen');
-    document.getElementById('start-scherm').classList.remove('verborgen');
-}
-
+/* --- POP-UPS UITLEG --- */
 function openUitlegKeezen() { document.getElementById('uitleg-keezen-scherm').classList.remove('verborgen'); }
 function sluitUitlegKeezen() { document.getElementById('uitleg-keezen-scherm').classList.add('verborgen'); }
 function openUitlegUI() { document.getElementById('uitleg-ui-scherm').classList.remove('verborgen'); }
