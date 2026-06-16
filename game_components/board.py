@@ -20,8 +20,10 @@ class Board:
                 
         for number in range(32):
             expected_id = (number // 4) % 4
-            owner = player_dict.get(expected_id, None)
-            self.spaces.append(Space(number + 65, owner))
+            index = 0 if expected_id == 0 else 2 if expected_id == 1 else 1 if expected_id == 2 else 3
+            owner = player_dict.get(index, None)
+            pawn = owner.pawns[number // 4 % 4] if owner else None
+            self.spaces.append(Space(number + 65, owner, pawn))
 
     def update(self, pawn, steps, switch = False):
         self.spaces[pawn.position].occupied_by = None
@@ -35,3 +37,12 @@ class Board:
             currentPawn.clear_entry_card()
             
         target_space.occupied_by = pawn
+
+    def getPlayerSpaces(self):
+        player_spaces = []
+        for space in self.spaces:
+            if space.occupied_by and space.occupied_by.owner is not None:
+                player_spaces.append(int(space.occupied_by.owner))
+            else:
+                player_spaces.append(None)
+        return player_spaces

@@ -22,21 +22,57 @@ class GameManager:
         except RuntimeError:
             pass
 
+    def _register_connection_for_player(self, event, player_id):
+        """Register the incoming connection for the given player ID."""
+        if event.get("_websocket"):
+            self.comm.register_websocket_player(event["_websocket"], player_id)
+        if event.get("_usb_port"):
+            self.comm.register_usb_player(event["_usb_port"], player_id)
+
+        if event.get("_websocket") or event.get("_usb_port"):
+            self._create_async_task(self.comm.send_player_message(player_id, {
+                "type": "ASSIGNED_PLAYER_ID",
+                "player_id": player_id
+            }))
+
+    def _resolve_join_player_id(self, event, max_players=4):
+        """Resolve a unique player ID for a join event without causing collisions."""
+        requested_id = event.get("player_id")
+        try:
+            requested_id = int(requested_id) if requested_id is not None else None
+        except (TypeError, ValueError):
+            requested_id = None
+
+        mapped_ids = self.comm.get_all_mapped_player_ids()
+
+        if requested_id is not None:
+            already_mapped = requested_id in mapped_ids
+            if not already_mapped:
+                return requested_id
+
+            # Allow reconnect from the same websocket or USB device for the same ID.
+            if event.get("_websocket"):
+                existing_ws = self.comm.get_player_websocket(requested_id)
+                if existing_ws == event["_websocket"]:
+                    return requested_id
+            if event.get("_usb_port"):
+                existing_port = self.comm.get_player_usb(requested_id)
+                if existing_port == event["_usb_port"]:
+                    return requested_id
+
+        return next((i for i in range(max_players) if i not in mapped_ids), None)
+
     def handleEvent(self, event):
         t = event["type"]
         if t == "PLAYER_JOIN":
-            player_id = event.get("player_id")
-            
+            player_id = self._resolve_join_player_id(event)
+
+            if player_id is None:
+                return
+
             if not self.game_started:
                 # UNIFIEKE POOL: Haal alle bezette ID's op van de spelers die al meedoen
                 existing_ids = {p.id for p in self.players}
-                
-                if player_id is None:
-                    free_id = next((i for i in range(4) if i not in existing_ids), None)
-                    if free_id is None:
-                        return
-                    player_id = free_id
-                
                 if player_id not in existing_ids:
                     self.players.append(Player("player" + str(player_id), player_id))
                 
@@ -171,6 +207,11 @@ class GameManager:
         message = {"type": "CURRENT_PLAYER", "player_id": self.players[self.current_player_index].id}
         await self.comm._broadcast_websocket(message)
 
+    def broadcast_board(self):
+        if self.board:
+            message = {"type": "BOARD_STATE", "spaces": self.board.getPlayerSpaces()}
+            self._create_async_task(self.comm._broadcast_websocket(message))
+
     def format_pawn_label(self, pawn):
         if pawn.position >= 80: return "B"
         if 64 <= pawn.position <= 79:
@@ -257,6 +298,7 @@ class GameManager:
         self._create_async_task(self.broadcast_current_player())
         self.broadcast_hands()
         self.broadcast_game_state()
+        self.broadcast_board()
 
     def playCard(self, player_id, card_data, pawn_id, pawn2_id=None, movePawn2=None, target_player_id=None):
         try: player_id = int(player_id)
@@ -371,3 +413,4 @@ class GameManager:
         self.broadcast_hands()
         self._create_async_task(self.broadcast_current_player())
         self.broadcast_game_state()
+        self.broadcast_board()
