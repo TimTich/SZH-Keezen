@@ -121,9 +121,14 @@ function updateBeurtStatus() {
         if (spelerId === huidigeSpeler) bevestigKnop.classList.remove('uitgeschakeld');
         else bevestigKnop.classList.add('uitgeschakeld');
     }
-    if (jouwSpelerGameElement) {
+    if (jouwSpelerGameElement && spelerId !== null) {
         const weergaveId = spelerId + 1;
-        jouwSpelerGameElement.textContent = spelerId === huidigeSpeler ? `Jij bent speler ${weergaveId} (jouw beurt)` : `Jij bent speler ${weergaveId}`;
+        // HIER WORDT HET DYNAMISCHE LAMPJE AANGESTUURD
+        if (spelerId === huidigeSpeler) {
+            jouwSpelerGameElement.innerHTML = `<div class="beurt-lampje groen"></div> JIJ BENT SPELER ${weergaveId} (JOUW BEURT)`;
+        } else {
+            jouwSpelerGameElement.innerHTML = `<div class="beurt-lampje rood"></div> JIJ BENT SPELER ${weergaveId} (WACHTEN...)`;
+        }
     }
     checkSelecties();
 }
@@ -140,8 +145,6 @@ function updateInfoBlokjes(playerId) {
     const startPos = startPosities[playerId];
     const binnenPos = binnenPosities[playerId];
 
-    // FIX: Gebruik #spel-scherm in plaats van de algemene container
-    // Hierdoor zijn de blokjes onzichtbaar als het startscherm nog open is!
     const spelScherm = document.getElementById('spel-scherm');
     if (!spelScherm) {
         setTimeout(() => updateInfoBlokjes(playerId), 100);
@@ -153,7 +156,7 @@ function updateInfoBlokjes(playerId) {
         startBlok = document.createElement('div');
         startBlok.id = 'info-start';
         startBlok.className = 'info-blokje links';
-        spelScherm.appendChild(startBlok); // Voeg toe aan het specifieke game-scherm
+        spelScherm.appendChild(startBlok); 
     }
 
     let binnenBlok = document.getElementById('info-binnen');
@@ -161,7 +164,7 @@ function updateInfoBlokjes(playerId) {
         binnenBlok = document.createElement('div');
         binnenBlok.id = 'info-binnen';
         binnenBlok.className = 'info-blokje rechts';
-        spelScherm.appendChild(binnenBlok); // Voeg toe aan het specifieke game-scherm
+        spelScherm.appendChild(binnenBlok); 
     }
 
     startBlok.innerHTML = `<span>START</span>${startPos}`;
@@ -172,10 +175,10 @@ function updateJouwSpeler(playerId) {
     const weergaveId = playerId + 1;
     const jouwSpelerElement = document.getElementById('jouw-speler');
     if (jouwSpelerElement) jouwSpelerElement.textContent = `Jij bent speler ${weergaveId}`;
-    const jouwSpelerGameElement = document.getElementById('jouw-speler-game');
-    if (jouwSpelerGameElement) jouwSpelerGameElement.textContent = `Jij bent speler ${weergaveId}`;
     
+    // Voorkomt dat tekst later crasht doordat updateBeurtStatus dit scherm nu regelt
     updateInfoBlokjes(playerId);
+    updateBeurtStatus(); // Tekent direct het rode of groene lampje
 }
 
 // ============================================
