@@ -490,25 +490,32 @@ body {
 }
 .tekst-inhoud {
     font-family: 'Arial', sans-serif;
-    font-size: 1.25rem; /* Fractie kleiner zodat alles er in één keer oppast */
+    font-size: 1.25rem; 
     line-height: 1.45;
     color: #111;
-    overflow-y: auto !important; /* Als het echt te groot is, mag je nu scrollen */
+    overflow-y: auto !important; 
     flex-grow: 1; 
     display: flex;
     flex-direction: column;
-    justify-content: start; 
-
+    justify-content: center; 
+    text-align: left !important; /* Forceert de inhoud naar links */
+}
+.tekst-inhoud p {
+    text-align: left !important;
+    margin-bottom: 10px;
 }
 .tekst-inhoud ul {
     background-color: #f5f5f5;
-    padding: 15px 35px; 
+    padding: 20px 40px 20px 60px; /* Meer ruimte links voor opsommingstekens */
     border-radius: 12px;
     border: 2px solid #ccc;
     margin: 5px 0;
+    text-align: left !important; /* Forceert list naar links */
+    list-style-position: outside; /* Laat tweede regel recht onder de tekst vallen, niet onder het bolletje */
 }
 .tekst-inhoud li {
-    margin-bottom: 8px;
+    margin-bottom: 12px;
+    text-align: left !important;
 }
 .terug-knop {
     position: relative; 
