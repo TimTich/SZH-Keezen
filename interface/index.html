@@ -70,39 +70,40 @@
         </div>
     </div>
 
-    <div id="uitleg-keezen-scherm" class="popup-overlay verborgen">
-        <div class="popup-container tekst-container">
-            <h2>UITLEG KEEZEN</h2>
-            <div class="tekst-inhoud">
-                <ul>
-                    <li><strong>Aas / Heer (A / K):</strong> Pion op het startveld ('B') zetten. Aas mag ook 1 stap vooruit.</li>
-                    <li><strong>Boer (J):</strong> Verplicht ruilen met een pion van een tegenstander.</li>
-                    <li><strong>Vrouw (Q):</strong> 12 stappen vooruit lopen.</li>
-                    <li><strong>Vier (4):</strong> 4 stappen ACHTERUIT lopen.</li>
-                    <li><strong>Zeven (7):</strong> Stappen splitsen over 2 verschillende pionnen.</li>
-                    <li><strong>Overig (2-10):</strong> Normaal aantal stappen vooruit lopen.</li>
-                    <li><strong>Eindbasis (E1-E4):</strong> Krijg alle 4 je pionnen hierin om te winnen!</li>
-                </ul>
-            </div>
-            <button class="popup-speel-knop terug-knop" onclick="sluitUitlegKeezen()">TERUG</button>
-        </div>
-    </div>
-
     <div id="uitleg-ui-scherm" class="popup-overlay verborgen">
-        <div class="popup-container tekst-container">
-            <h2>UITLEG INTERFACE</h2>
-            <div class="tekst-inhoud">
-                <ul>
-                    <li><strong>Kaart kiezen:</strong> Klik op een kaart in je hand om hem te selecteren.</li>
-                    <li><strong>Pion kiezen:</strong> Klik op een pion op het bord om ermee te lopen.</li>
-                    <li><strong>SPEEL Knop:</strong> Wordt rood zodra je een geldige zet hebt klaargezet.</li>
-                    <li><strong>GOOI WEG Knop:</strong> Wordt actief als je de kaart écht nergens kunt spelen.</li>
-                    
-                </ul>
-            </div>
-            <button class="popup-speel-knop terug-knop" onclick="sluitUitlegUI()">TERUG</button>
+    <div class="popup-container tekst-container">
+        <h2>HOE WERKT DE BEDIENING?</h2>
+        <div class="tekst-inhoud">
+            <p>Deze interface is speciaal ontworpen voor oogbesturing, maar werkt ook met touch of een muis. Zo werkt het:</p>
+            <ul>
+                <li><strong>Beurt Lampje:</strong> Kijk onderaan het scherm. Brandt het lampje <strong>GROEN</strong>? Dan ben jij aan de beurt. Is het <strong>ROOD</strong>? Dan moet je even wachten.</li>
+                <li><strong>Vrij Selecteren:</strong> Je mag zelf weten wat je als eerste aanklikt: eerst je kaart en dan je pion, óf andersom. Als je selectie klopt, licht deze groen op.</li>
+                <li><strong>Een Zet Spelen:</strong> Heb je een geldige combinatie van kaart(en) en pion(nen) geselecteerd? Dan wordt de knop <strong>SPEEL</strong> rood en klikbaar. Bevestig hier je zet!</li>
+                <li><strong>Kaarten Weggooien:</strong> Kun je écht geen enkele kant op? Selecteer dan een kaart en zorg dat er <em>geen</em> pionnen geselecteerd zijn. De knop <strong>GOOI WEG</strong> wordt dan actief.</li>
+                <li><strong>Info Blokjes:</strong> De grijze blokjes links en rechts van je kaarten laten zien op welk vakje jouw pionnen starten en waar ze veilig naar binnen mogen (thuis).</li>
+            </ul>
         </div>
+        <button class="popup-speel-knop terug-knop" onclick="sluitUitlegUI()">TERUG</button>
     </div>
+</div>
+
+<div id="uitleg-keezen-scherm" class="popup-overlay verborgen">
+    <div class="popup-container tekst-container">
+        <h2>SPELREGELS KEEZEN</h2>
+        <div class="tekst-inhoud" style="overflow-y: auto !important; padding-right: 15px;">
+            <p>Het doel is simpel: zorg dat je al jouw vier pionnen als eerste veilig op de thuisvakjes hebt staan! Je speelt met kaarten in plaats van dobbelstenen.</p>
+            <ul>
+                <li><strong>Op het bord komen:</strong> Je hebt een <strong>Aas (A)</strong> of <strong>Heer (K)</strong> nodig om een nieuwe pion vanuit je voorraad op het startvakje te zetten.</li>
+                <li><strong>De Boer (J) - Ruilen!</strong> Met de Boer <em>moet</em> je de positie van jouw pion ruilen met een pion van een tegenspeler. (Let op: Pionnen op hun eigen start- of thuisvak zijn veilig en mogen niet geruild worden).</li>
+                <li><strong>De 7 - Splitten!</strong> Je mag de 7 stappen verdelen over twee van jouw eigen pionnen (bijv. 3 stappen met de ene, 4 met de andere). Selecteer simpelweg twee pionnen en het spelsysteem vraagt vanzelf hoe je ze wil verdelen.</li>
+                <li><strong>De 4 - Achteruit!</strong> Met een 4 loop je 4 stappen <em>achteruit</em>. Dit is extreem handig als je net uit start komt, want dan loop je in je volgende beurt zo je eigen thuishonk in!</li>
+                <li><strong>Stappen:</strong> A = 1 stap, K = 13 stappen. Bij alle overige kaarten (2, 3, 5, 6, 8, 9, 10, Q/Vrouw=12) loop je het aantal stappen vooruit dat op de kaart staat.</li>
+                <li><strong>Slaan:</strong> Land je exact op een vakje waar al een andere pion staat? Dan wordt deze van het bord geslagen en moet hij helemaal opnieuw beginnen.</li>
+            </ul>
+        </div>
+        <button class="popup-speel-knop terug-knop" onclick="sluitUitlegKeezen()">TERUG</button>
+    </div>
+</div>
 
     <div id="win-scherm" class="verborgen">
         <h1 class="win-titel" id="win-hoofdtekst">JIJ HEBT GEWONNEN!</h1>

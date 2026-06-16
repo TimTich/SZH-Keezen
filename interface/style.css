@@ -206,12 +206,11 @@ body {
     font-weight: bold;
     letter-spacing: 0.08rem;
     text-transform: uppercase;
-    background: rgba(0, 0, 0, 0.5); /* Iets donkerder gemaakt voor het lampje */
+    background: rgba(0, 0, 0, 0.5); 
     padding: 10px 25px;
     border-radius: 999px;
     border: 2px solid rgba(255, 255, 255, 0.4);
     z-index: 45;
-    /* Flexbox toegevoegd zodat het lampje perfect uitlijnt */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -219,7 +218,7 @@ body {
 }
 
 /* =======================================================
-   ACTIE KNOPPEN CONTAINER (SPEEL & GOOI WEG FIX)
+   NIEUWE ACTIE KNOPPEN CONTAINER (SPEEL & GOOI WEG FIX)
    ======================================================= */
 .actie-knoppen-rij {
     position: absolute;
@@ -298,10 +297,11 @@ body {
     flex-direction: column;
     overflow: hidden; 
     box-shadow: 0 10px 50px rgba(0,0,0,1) !important;
-    width: 950px; 
-    max-width: 90% !important;
+    /* GIGANTISCH GEMAAKT */
+    width: 1300px; 
+    max-width: 95vw !important;
     text-align: center !important;
-    padding: 30px !important;
+    padding: 30px 40px !important;
 }
 
 .popup-speel-knop {
@@ -369,7 +369,7 @@ body {
     transform: scale(1.15) translateY(-5px);
 }
 
-/* --- BOER LAYOUT  --- */
+/* --- DYNAMISCHE BOER LAYOUT (NO SCROLL GRID) --- */
 .boer-content {
     max-width: 1000px;
     width: 95%;
@@ -437,7 +437,7 @@ body {
 }
 
 /* =======================================================
-   --- INTERFACE & UITLEG POP-UPS  --- 
+   --- INTERFACE & UITLEG POP-UPS (GIGANTISCH GEMAAKT) --- 
    ======================================================= */
 .start-knoppen-rij {
     display: flex;
@@ -469,11 +469,10 @@ body {
 }
 
 .tekst-container {
-    padding: 20px 40px !important; 
+    padding: 10px 40px !important; 
     text-align: left;
-    width: 850px !important;  
-    max-width: 90% !important;
-    max-height: 88vh !important; 
+    width: 100% !important;  
+    max-height: 95vh !important; 
     margin-bottom: 0 !important; 
     display: flex;
     flex-direction: column;
@@ -491,10 +490,10 @@ body {
 }
 .tekst-inhoud {
     font-family: 'Arial', sans-serif;
-    font-size: 1.35rem; 
+    font-size: 1.25rem; /* Fractie kleiner zodat alles er in één keer oppast */
     line-height: 1.45;
     color: #111;
-    overflow: hidden !important; 
+    overflow-y: auto !important; /* Als het echt te groot is, mag je nu scrollen */
     flex-grow: 1; 
     display: flex;
     flex-direction: column;
@@ -523,7 +522,7 @@ body {
 }
 
 /* =======================================================
-   --- GIGANTISCH WIN SCHERM  --- 
+   --- GIGANTISCH WIN SCHERM (THEATRAAL EN GEANIMEERD) --- 
    ======================================================= */
 #win-scherm {
     position: fixed;
@@ -553,7 +552,7 @@ body {
 }
 
 /* =======================================================
-   INFO BLOKJES 
+   INFO BLOKJES (START & THUIS POSITIES)
    ======================================================= */
 .info-blokje {
     position: absolute;
@@ -592,14 +591,9 @@ body {
 .info-blokje.rechts {
     right: 45px;  
 }
-#huidige-beurt {
-    color: #ffffff; /* Maakt de tekst spierwit */
-    text-transform: uppercase; /* Zorgt dat het netjes in hoofdletters staat */
-    text-shadow: 2px 2px 5px rgba(0,0,0,0.5); /* Zorgt dat het er mooi uitknalt tegen de groene achtergrond */
-}
 
 /* =======================================================
-   GLOEIEND BEURT-LAMPJE 
+   GLOEIEND BEURT-LAMPJE (ROOD & GROEN) EN WITTE TEKST
    ======================================================= */
 .beurt-lampje {
     width: 25px;
@@ -618,4 +612,10 @@ body {
 .beurt-lampje.rood {
     background-color: #ff0000;
     box-shadow: 0 0 20px #ff0000, inset 0 0 10px #880000;
+}
+
+#huidige-beurt {
+    color: #ffffff; 
+    text-transform: uppercase; 
+    text-shadow: 2px 2px 5px rgba(0,0,0,0.5); 
 }

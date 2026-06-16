@@ -123,7 +123,6 @@ function updateBeurtStatus() {
     }
     if (jouwSpelerGameElement && spelerId !== null) {
         const weergaveId = spelerId + 1;
-        // HIER WORDT HET DYNAMISCHE LAMPJE AANGESTUURD
         if (spelerId === huidigeSpeler) {
             jouwSpelerGameElement.innerHTML = `<div class="beurt-lampje groen"></div> JIJ BENT SPELER ${weergaveId} (JOUW BEURT)`;
         } else {
@@ -176,9 +175,8 @@ function updateJouwSpeler(playerId) {
     const jouwSpelerElement = document.getElementById('jouw-speler');
     if (jouwSpelerElement) jouwSpelerElement.textContent = `Jij bent speler ${weergaveId}`;
     
-    // Voorkomt dat tekst later crasht doordat updateBeurtStatus dit scherm nu regelt
     updateInfoBlokjes(playerId);
-    updateBeurtStatus(); // Tekent direct het rode of groene lampje
+    updateBeurtStatus(); 
 }
 
 // ============================================
@@ -244,15 +242,25 @@ function selecteerKaart(el) {
         return;
     }
 
+    // Deselecteer andere kaarten en selecteer de nieuwe
     document.querySelectorAll('.speelkaart-wrapper').forEach(w => w.classList.remove('geselecteerd'));
     el.classList.add('geselecteerd');
     
     const imgEl = el.querySelector('img');
     const kaartNaam = imgEl ? imgEl.alt : "";
     
+    // NIEUWE LOGICA: Gooi de geselecteerde pionnen NIET direct weg!
+    // We checken alleen of het GEEN 7 is, maar de speler had per ongeluk toch al 2 pionnen geselecteerd.
+    // In dat geval maken we het de speler makkelijk en laten we alleen de eerste geselecteerde pion staan.
     if (kaartNaam !== '7') {
-        document.querySelectorAll('.pion').forEach(p => p.classList.remove('geselecteerd'));
+        const geselecteerdePionnen = document.querySelectorAll('.pion.geselecteerd');
+        if (geselecteerdePionnen.length > 1) {
+            for (let i = 1; i < geselecteerdePionnen.length; i++) {
+                geselecteerdePionnen[i].classList.remove('geselecteerd');
+            }
+        }
     }
+
     updateInstructie();
     checkSelecties(); 
 }
@@ -266,15 +274,23 @@ function selecteerPion(el) {
     const geselecteerdeKaart = document.querySelector('.speelkaart-wrapper.geselecteerd img');
     const kaartNaam = geselecteerdeKaart ? geselecteerdeKaart.alt : "";
     
+    // NIEUWE LOGICA: Je mag nu ook pionnen selecteren als je nog geen kaart hebt geklikt
     if (kaartNaam === '7') {
+        // Bij de 7 mag je maximaal 2 pionnen aanklikken (of weer uitklikken)
         if (el.classList.contains('geselecteerd')) {
             el.classList.remove('geselecteerd');
         } else if (document.querySelectorAll('.pion.geselecteerd').length < 2) {
             el.classList.add('geselecteerd');
         }
     } else {
-        document.querySelectorAll('.pion').forEach(p => p.classList.remove('geselecteerd'));
-        el.classList.add('geselecteerd');
+        // Bij alle andere kaarten, OF als je nog helemaal geen kaart hebt geselecteerd:
+        // Je mag er eentje selecteren. Klik je een andere, dan wisselt hij. Klik je dezelfde, dan deselecteert hij.
+        if (el.classList.contains('geselecteerd')) {
+            el.classList.remove('geselecteerd');
+        } else {
+            document.querySelectorAll('.pion').forEach(p => p.classList.remove('geselecteerd'));
+            el.classList.add('geselecteerd');
+        }
     }
     
     updateInstructie();
@@ -287,12 +303,21 @@ function updateInstructie() {
     const instructie = document.getElementById('instructie-tekst');
     
     if(instructie) {
+        // Wat als de speler nog geen kaart heeft geselecteerd?
         if (!geselecteerdeKaart) {
-            instructie.innerText = "MAAK JE KEUZE";
-        } else if (geselecteerdeKaart.alt === '7') {
+            if (aantalPionnen > 0) {
+                instructie.innerText = "SELECTEER NU EEN KAART";
+            } else {
+                instructie.innerText = "MAAK JE KEUZE";
+            }
+        } 
+        // Wat als de 7 geselecteerd is?
+        else if (geselecteerdeKaart.alt === '7') {
             if (aantalPionnen === 0) instructie.innerText = "SELECTEER 1 OF 2 PIONNEN OM TE SPELEN";
             else instructie.innerText = "KLIK NU OP SPEEL";
-        } else {
+        } 
+        // Bij alle andere kaarten
+        else {
             if (aantalPionnen === 0) instructie.innerText = "SELECTEER EEN PION OM TE SPELEN";
             else instructie.innerText = "KLIK NU OP SPEEL";
         }
@@ -310,6 +335,7 @@ function checkSelecties() {
     let speelActief = false;
     let weggooiActief = false;
 
+    // De speelknop wordt pas actief als EN de kaart geselecteerd is, EN de pion(nen)
     if (spelerId === huidigeSpeler && geselecteerdeKaart) {
         if (kaartNaam === '7') {
             speelActief = (aantalPionnen === 1 || aantalPionnen === 2);
