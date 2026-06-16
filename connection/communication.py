@@ -15,6 +15,7 @@ class CommunicationManager:
     def __init__(self, event_queue: Optional[Queue] = None):
         self.websocket_clients: List = []
         self.websocket_player_map: Dict = {}
+        self.usb_player_map: Dict[str, int] = {}
         self.usb_serials: Dict[str, serial.Serial] = {}
         self.usb_player_map: Dict = {}  # NIEUW: Koppelt player_id aan een USB-poort
         self.event_queue = event_queue
@@ -51,6 +52,25 @@ class CommunicationManager:
             if pid == player_id:
                 return client
         return None
+
+    def get_player_usb(self, player_id):
+        """Return the USB serial port for a given player ID."""
+        for port, pid in self.usb_player_map.items():
+            if pid == player_id:
+                return port
+        return None
+
+    def register_usb_player(self, port: str, player_id: int):
+        """Link a USB serial port to a player ID."""
+        if port in self.usb_serials:
+            self.usb_player_map[port] = player_id
+            print(f"USB serial port {port} registered for player {player_id}")
+
+    def get_all_mapped_player_ids(self):
+        """Return all player IDs currently mapped to sockets or USB devices."""
+        player_ids = set(self.websocket_player_map.values())
+        player_ids.update(self.usb_player_map.values())
+        return player_ids
 
     async def _send_websocket_message(self, client, message: Dict):
         """Send a JSON message to a single websocket client."""
@@ -100,6 +120,7 @@ class CommunicationManager:
             try:
                 self.usb_serials[port].close()
                 del self.usb_serials[port]
+                self.usb_player_map.pop(port, None)
                 print(f"USB serial disconnected from port {port}")
                 return True
             except Exception as e:
@@ -151,8 +172,8 @@ class CommunicationManager:
                                 # FIX: Voeg het _port stempel toe, net zoals bij websockets!
                                 event["_port"] = port
                                 if self.event_queue:
+                                    event["_usb_port"] = port
                                     self.event_queue.put(event)
-                                    print(f"Added USB serial event from {port} to queue: {event['type']}")
                                 else:
                                     print("Warning: No event queue configured for incoming messages")
                                 buffer = ""
@@ -172,7 +193,6 @@ class CommunicationManager:
         for port, thread in self.usb_listener_threads.items():
             if thread.is_alive():
                 thread.join(timeout=2)
-                print(f"Stopped listener thread for {port}")
     
     async def broadcast_game_start(self):
         """Broadcast game start message to all connected WebSocket clients and USB serials"""
@@ -192,7 +212,6 @@ class CommunicationManager:
             try:
                 await client.send(json.dumps(message))
             except Exception as e:
-                print(f"Error sending to WebSocket client: {e}")
                 disconnected_clients.append(client)
         for client in disconnected_clients:
             self.remove_websocket_client(client)
@@ -207,7 +226,6 @@ class CommunicationManager:
             try:
                 ser.write(message_bytes)
             except Exception as e:
-                print(f"Error sending to USB serial on {port}: {e}")
     
     def get_connection_status(self) -> Dict:
         """Get current connection status"""
@@ -223,4 +241,3 @@ class CommunicationManager:
         for port in list(self.usb_serials.keys()):
             self.disconnect_usb_serial(port)
         self.websocket_clients.clear()
-        print("CommunicationManager cleaned up")
