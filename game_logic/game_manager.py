@@ -270,6 +270,7 @@ class GameManager:
 
             bericht = {
                 "type": "NIEUWE_HAND",
+                "player_id": player.id,
                 "kaarten": kaart_waardes,
                 "weggooi_opties": weggooi_opties
             }
