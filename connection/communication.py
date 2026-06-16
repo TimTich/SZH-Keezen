@@ -17,6 +17,7 @@ class CommunicationManager:
         self.websocket_player_map: Dict = {}
         self.usb_player_map: Dict[str, int] = {}
         self.usb_serials: Dict[str, serial.Serial] = {}
+        self.usb_player_map: Dict = {}  # NIEUW: Koppelt player_id aan een USB-poort
         self.event_queue = event_queue
         self.usb_listener_threads: Dict[str, threading.Thread] = {}
         self.stop_listening = False
@@ -39,6 +40,11 @@ class CommunicationManager:
         if client in self.websocket_clients:
             self.websocket_player_map[client] = player_id
             print(f"WebSocket client registered for player {player_id}")
+
+    def register_usb_player(self, port: str, player_id: int):
+        """NIEUW: Link een fysieke Arduino USB-poort aan een player ID"""
+        self.usb_player_map[player_id] = port
+        print(f"USB Serial port {port} geregistreerd voor player {player_id}")
 
     def get_player_websocket(self, player_id):
         """Return the connected websocket client for a given player ID."""
@@ -75,26 +81,24 @@ class CommunicationManager:
             self.remove_websocket_client(client)
 
     async def send_player_message(self, player_id, message: Dict):
-        """Send a message to any connected client for a given player ID."""
-        sent = False
-
+        """UPGRADE: Stuurt berichten naar de juiste bron (WebSocket óf Fysieke Arduino)"""
         client = self.get_player_websocket(player_id)
         if client:
+            # Stuur naar de telefoon/iPad van de speler
             await self._send_websocket_message(client, message)
-            sent = True
-
-        usb_port = self.get_player_usb(player_id)
-        if usb_port:
-            ser = self.usb_serials.get(usb_port)
+        elif player_id in self.usb_player_map:
+            # NIEUW: Stuur direct naar de Arduino (voor het flapdisplay / lampjes)
+            port = self.usb_player_map[player_id]
+            ser = self.usb_serials.get(port)
             if ser:
                 try:
-                    ser.write((json.dumps(message) + "\n").encode("utf-8"))
-                    sent = True
+                    message["target_player_id"] = player_id
+                    message_str = json.dumps(message) + "\n"
+                    ser.write(message_str.encode('utf-8'))
                 except Exception as e:
-                    print(f"Error sending message to USB serial {usb_port}: {e}")
-
-        if not sent:
-            print(f"No connected client found for player {player_id}")
+                    print(f"Error sending to USB serial on {port}: {e}")
+        else:
+            print(f"No active connection found for player {player_id}")
     
     def register_usb_serial(self, port: str, baudrate: int = 9600) -> bool:
         """Register a USB serial connection"""
@@ -163,9 +167,10 @@ class CommunicationManager:
                         if message:
                             buffer += message
                             
-                            # Try to parse as JSON when we get a complete message
                             try:
                                 event = json.loads(buffer)
+                                # FIX: Voeg het _port stempel toe, net zoals bij websockets!
+                                event["_port"] = port
                                 if self.event_queue:
                                     event["_usb_port"] = port
                                     self.event_queue.put(event)
@@ -173,7 +178,6 @@ class CommunicationManager:
                                     print("Warning: No event queue configured for incoming messages")
                                 buffer = ""
                             except json.JSONDecodeError:
-                                # Message not complete yet, continue buffering
                                 pass
                 except Exception as e:
                     print(f"Serial read error on {port}: {e}")
@@ -196,27 +200,19 @@ class CommunicationManager:
             "type": "GAME_START",
             "status": "GAME_STARTED"
         }
-        
-        # Send to WebSocket clients
         await self._broadcast_websocket(message)
-        
-        # Send to USB serials
         self._broadcast_usb_serial(message)
     
     async def _broadcast_websocket(self, message: Dict):
         """Send message to all connected WebSocket clients"""
         if not self.websocket_clients:
             return
-        
         disconnected_clients = []
-        
         for client in self.websocket_clients:
             try:
                 await client.send(json.dumps(message))
             except Exception as e:
                 disconnected_clients.append(client)
-        
-        # Clean up disconnected clients
         for client in disconnected_clients:
             self.remove_websocket_client(client)
     
@@ -224,10 +220,8 @@ class CommunicationManager:
         """Send message to all connected USB serial devices"""
         if not self.usb_serials:
             return
-        
         message_str = json.dumps(message) + "\n"
         message_bytes = message_str.encode('utf-8')
-        
         for port, ser in self.usb_serials.items():
             try:
                 ser.write(message_bytes)
@@ -244,8 +238,6 @@ class CommunicationManager:
     def cleanup(self):
         """Clean up all connections and threads"""
         self.stop_usb_listeners()
-        
         for port in list(self.usb_serials.keys()):
             self.disconnect_usb_serial(port)
-        
         self.websocket_clients.clear()
