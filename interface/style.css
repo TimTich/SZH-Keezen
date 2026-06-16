@@ -219,7 +219,7 @@ body {
 }
 
 /* =======================================================
-   NIEUWE ACTIE KNOPPEN CONTAINER (SPEEL & GOOI WEG FIX)
+   ACTIE KNOPPEN CONTAINER (SPEEL & GOOI WEG FIX)
    ======================================================= */
 .actie-knoppen-rij {
     position: absolute;
@@ -369,7 +369,7 @@ body {
     transform: scale(1.15) translateY(-5px);
 }
 
-/* --- DYNAMISCHE BOER LAYOUT (NO SCROLL GRID) --- */
+/* --- BOER LAYOUT  --- */
 .boer-content {
     max-width: 1000px;
     width: 95%;
@@ -437,7 +437,7 @@ body {
 }
 
 /* =======================================================
-   --- INTERFACE & UITLEG POP-UPS (NO SCROLL UPGRADE) --- 
+   --- INTERFACE & UITLEG POP-UPS  --- 
    ======================================================= */
 .start-knoppen-rij {
     display: flex;
@@ -523,7 +523,7 @@ body {
 }
 
 /* =======================================================
-   --- GIGANTISCH WIN SCHERM (THEATRAAL EN GEANIMEERD) --- 
+   --- GIGANTISCH WIN SCHERM  --- 
    ======================================================= */
 #win-scherm {
     position: fixed;
@@ -553,7 +553,7 @@ body {
 }
 
 /* =======================================================
-   INFO BLOKJES (START & THUIS POSITIES)
+   INFO BLOKJES 
    ======================================================= */
 .info-blokje {
     position: absolute;
@@ -592,9 +592,14 @@ body {
 .info-blokje.rechts {
     right: 45px;  
 }
+#huidige-beurt {
+    color: #ffffff; /* Maakt de tekst spierwit */
+    text-transform: uppercase; /* Zorgt dat het netjes in hoofdletters staat */
+    text-shadow: 2px 2px 5px rgba(0,0,0,0.5); /* Zorgt dat het er mooi uitknalt tegen de groene achtergrond */
+}
 
 /* =======================================================
-   GLOEIEND BEURT-LAMPJE (ROOD & GROEN)
+   GLOEIEND BEURT-LAMPJE 
    ======================================================= */
 .beurt-lampje {
     width: 25px;
