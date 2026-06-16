@@ -44,5 +44,5 @@ class Board:
             if space.occupied_by and space.occupied_by.owner is not None:
                 player_spaces.append(int(space.occupied_by.owner))
             else:
-                player_spaces.append(None)
+                player_spaces.append(4)
         return player_spaces
