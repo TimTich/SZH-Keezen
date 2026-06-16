@@ -169,7 +169,6 @@ class CommunicationManager:
                                 if self.event_queue:
                                     event["_usb_port"] = port
                                     self.event_queue.put(event)
-                                    print(f"Added USB serial event from {port} to queue: {event['type']}")
                                 else:
                                     print("Warning: No event queue configured for incoming messages")
                                 buffer = ""
@@ -190,7 +189,6 @@ class CommunicationManager:
         for port, thread in self.usb_listener_threads.items():
             if thread.is_alive():
                 thread.join(timeout=2)
-                print(f"Stopped listener thread for {port}")
     
     async def broadcast_game_start(self):
         """Broadcast game start message to all connected WebSocket clients and USB serials"""
@@ -208,7 +206,6 @@ class CommunicationManager:
     async def _broadcast_websocket(self, message: Dict):
         """Send message to all connected WebSocket clients"""
         if not self.websocket_clients:
-            print("No WebSocket clients connected")
             return
         
         disconnected_clients = []
@@ -216,9 +213,7 @@ class CommunicationManager:
         for client in self.websocket_clients:
             try:
                 await client.send(json.dumps(message))
-                print(f"Sent message to WebSocket client")
             except Exception as e:
-                print(f"Error sending to WebSocket client: {e}")
                 disconnected_clients.append(client)
         
         # Clean up disconnected clients
@@ -228,7 +223,6 @@ class CommunicationManager:
     def _broadcast_usb_serial(self, message: Dict):
         """Send message to all connected USB serial devices"""
         if not self.usb_serials:
-            print("No USB serial devices connected")
             return
         
         message_str = json.dumps(message) + "\n"
@@ -237,9 +231,7 @@ class CommunicationManager:
         for port, ser in self.usb_serials.items():
             try:
                 ser.write(message_bytes)
-                print(f"Sent game start message to USB serial on port {port}")
             except Exception as e:
-                print(f"Error sending to USB serial on {port}: {e}")
     
     def get_connection_status(self) -> Dict:
         """Get current connection status"""
@@ -257,4 +249,3 @@ class CommunicationManager:
             self.disconnect_usb_serial(port)
         
         self.websocket_clients.clear()
-        print("CommunicationManager cleaned up")
