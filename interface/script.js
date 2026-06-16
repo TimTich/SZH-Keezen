@@ -138,8 +138,8 @@ function updateBeurtStatus() {
 function updateInfoBlokjes(playerId) {
     if (playerId === null || playerId === undefined) return;
 
-    const startPosities = [1, 17, 33, 49];
-    const binnenPosities = [64, 16, 32, 48];
+    const startPosities = [1, 33, 17, 49];
+    const binnenPosities = [64, 32, 16, 48];
 
     const startPos = startPosities[playerId];
     const binnenPos = binnenPosities[playerId];

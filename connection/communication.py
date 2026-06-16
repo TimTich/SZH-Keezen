@@ -226,6 +226,7 @@ class CommunicationManager:
             try:
                 ser.write(message_bytes)
             except Exception as e:
+                print(f"Error broadcasting to USB serial on {port}: {e}")
     
     def get_connection_status(self) -> Dict:
         """Get current connection status"""
