@@ -28,7 +28,7 @@ class GameManager:
             player_id = event.get("player_id")
             
             if not self.game_started:
-                # Spel is nog niet gestart: voeg spelers normaal toe
+                # UNIFIEKE POOL: Haal alle bezette ID's op van de spelers die al meedoen
                 existing_ids = {p.id for p in self.players}
                 
                 if player_id is None:
@@ -40,30 +40,39 @@ class GameManager:
                 if player_id not in existing_ids:
                     self.players.append(Player("player" + str(player_id), player_id))
                 
+                # Sla de verbinding op basis van de bron op
                 if event.get("_websocket"):
                     self.comm.register_websocket_player(event["_websocket"], player_id)
-                    self._create_async_task(self.comm.send_player_message(player_id, {
-                        "type": "ASSIGNED_PLAYER_ID",
-                        "player_id": player_id
-                    }))
+                elif event.get("_port"):
+                    self.comm.register_usb_player(event["_port"], player_id)
+                
+                # Geef de unieke ID (0 t/m 3 intern) direct terug aan de juiste bron
+                self._create_async_task(self.comm.send_player_message(player_id, {
+                    "type": "ASSIGNED_PLAYER_ID",
+                    "player_id": player_id
+                }))
                     
                 self._create_async_task(self.broadcast_player_count())
             else:
-                # FIX: Het spel is al gestart! Koppel de telefoon direct aan een vrije speler-positie
+                # Spel is al gestart (mid-game join of reconnect)
                 if player_id is None:
                     mapped_pids = set(self.comm.websocket_player_map.values())
+                    if hasattr(self.comm, 'usb_player_map'):
+                        mapped_pids.update(self.comm.usb_player_map.keys())
                     player_id = next((i for i in range(len(self.players)) if i not in mapped_pids), 0)
                 
                 if event.get("_websocket"):
                     self.comm.register_websocket_player(event["_websocket"], player_id)
-                    self._create_async_task(self.comm.send_player_message(player_id, {
-                        "type": "ASSIGNED_PLAYER_ID",
-                        "player_id": player_id
-                    }))
-                    # Stuur direct je kaarten en de bord-status naar je telefoon zodat de knoppen activeren!
-                    self.broadcast_hands()
-                    self.broadcast_game_state()
-                    self._create_async_task(self.broadcast_current_player())
+                elif event.get("_port"):
+                    self.comm.register_usb_player(event["_port"], player_id)
+                
+                self._create_async_task(self.comm.send_player_message(player_id, {
+                    "type": "ASSIGNED_PLAYER_ID",
+                    "player_id": player_id
+                }))
+                self.broadcast_hands()
+                self.broadcast_game_state()
+                self._create_async_task(self.broadcast_current_player())
 
         elif t == "CONFIRM_START":
             self.startGame()
@@ -192,7 +201,6 @@ class GameManager:
 
     def broadcast_game_state(self):
         alle_pionnen = self.get_all_pawns_status()
-        
         for player in self.players:
             pionnen_status = {}
             for i, pawn in enumerate(player.pawns):
@@ -270,7 +278,6 @@ class GameManager:
 
         if card.face == "J":
             alle_pionnen = self.get_all_pawns_status()
-            
             has_own = any(p["is_valid_own"] for p in alle_pionnen.get(str(player.id), []))
             has_enemy = any(any(p["is_valid"] for p in pawns) for pid, pawns in alle_pionnen.items() if pid != str(player.id))
             

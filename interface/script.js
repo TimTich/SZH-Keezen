@@ -114,12 +114,12 @@ function updateHuidigeBeurt(playerId) {
 }
 
 function updateBeurtStatus() {
-    constGrid = document.getElementById('bevestig-knop');
+    const bevestigKnop = document.getElementById('bevestig-knop');
     const jouwSpelerGameElement = document.getElementById('jouw-speler-game');
     
-    if (constGrid) {
-        if (spelerId === huidigeSpeler) constGrid.classList.remove('uitgeschakeld');
-        else constGrid.classList.add('uitgeschakeld');
+    if (bevestigKnop) {
+        if (spelerId === huidigeSpeler) bevestigKnop.classList.remove('uitgeschakeld');
+        else bevestigKnop.classList.add('uitgeschakeld');
     }
     if (jouwSpelerGameElement) {
         const weergaveId = spelerId + 1;
@@ -128,15 +128,55 @@ function updateBeurtStatus() {
     checkSelecties();
 }
 
+// ============================================
+// INFO BLOKJES LOGICA (GELINKT AAN SPEEL-SCHERM)
+// ============================================
+function updateInfoBlokjes(playerId) {
+    if (playerId === null || playerId === undefined) return;
+
+    const startPosities = [1, 17, 33, 49];
+    const binnenPosities = [64, 16, 32, 48];
+
+    const startPos = startPosities[playerId];
+    const binnenPos = binnenPosities[playerId];
+
+    // FIX: Gebruik #spel-scherm in plaats van de algemene container
+    // Hierdoor zijn de blokjes onzichtbaar als het startscherm nog open is!
+    const spelScherm = document.getElementById('spel-scherm');
+    if (!spelScherm) {
+        setTimeout(() => updateInfoBlokjes(playerId), 100);
+        return;
+    }
+
+    let startBlok = document.getElementById('info-start');
+    if (!startBlok) {
+        startBlok = document.createElement('div');
+        startBlok.id = 'info-start';
+        startBlok.className = 'info-blokje links';
+        spelScherm.appendChild(startBlok); // Voeg toe aan het specifieke game-scherm
+    }
+
+    let binnenBlok = document.getElementById('info-binnen');
+    if (!binnenBlok) {
+        binnenBlok = document.createElement('div');
+        binnenBlok.id = 'info-binnen';
+        binnenBlok.className = 'info-blokje rechts';
+        spelScherm.appendChild(binnenBlok); // Voeg toe aan het specifieke game-scherm
+    }
+
+    startBlok.innerHTML = `<span>START</span>${startPos}`;
+    binnenBlok.innerHTML = `<span>THUIS</span>${binnenPos}`;
+}
+
 function updateJouwSpeler(playerId) {
     const weergaveId = playerId + 1;
     const jouwSpelerElement = document.getElementById('jouw-speler');
     if (jouwSpelerElement) jouwSpelerElement.textContent = `Jij bent speler ${weergaveId}`;
     const jouwSpelerGameElement = document.getElementById('jouw-speler-game');
     if (jouwSpelerGameElement) jouwSpelerGameElement.textContent = `Jij bent speler ${weergaveId}`;
+    
+    updateInfoBlokjes(playerId);
 }
-
-verbindMetPi();
 
 // ============================================
 // UI LOGICA (VISUELE KANT & KLIKKEN)
@@ -150,6 +190,7 @@ window.startSpel = function() {
 
 function tekenKaarten(hand) {
     const handContainer = document.getElementById('hand-kaarten');
+    if (!handContainer) return;
     handContainer.innerHTML = '';
     
     hand.forEach(waarde => {
@@ -306,9 +347,6 @@ function checkSelecties() {
     }
 }
 
-// ============================================
-// UPGRADE: STUURT NU OOK JOUW BORD-POSITIES MEE
-// ============================================
 function gooiKaartWeg() {
     if (spelerId !== huidigeSpeler) return;
     
@@ -317,7 +355,6 @@ function gooiKaartWeg() {
 
     const geselecteerdeKaart = kaartElement.alt; 
     
-    // Haal direct de posities van jouw 4 pionnen van het scherm af
     const huidigePosities = [
         document.querySelector("[data-id='pion-1'] .pos-label").innerText,
         document.querySelector("[data-id='pion-2'] .pos-label").innerText,
@@ -623,7 +660,13 @@ function sluitUitlegKeezen() { document.getElementById('uitleg-keezen-scherm').c
 function openUitlegUI() { document.getElementById('uitleg-ui-scherm').classList.remove('verborgen'); }
 function sluitUitlegUI() { document.getElementById('uitleg-ui-scherm').classList.add('verborgen'); }
 
+verbindMetPi();
+
 document.addEventListener('DOMContentLoaded', () => {
     const speelKnopStart = document.getElementById('speel-knop');
     if (speelKnopStart) speelKnopStart.addEventListener('click', startSpel);
+    
+    if (spelerId !== null) {
+        updateInfoBlokjes(spelerId);
+    }
 });
