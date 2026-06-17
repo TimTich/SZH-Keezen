@@ -22,7 +22,7 @@ class Board:
             expected_id = (number // 4) % 4
             index = 0 if expected_id == 0 else 2 if expected_id == 1 else 1 if expected_id == 2 else 3
             owner = player_dict.get(index, None)
-            pawn = owner.pawns[number // 4 % 4] if owner else None
+            pawn = owner.pawns[number // 4 % 4] if owner and number >= 16 else None
             self.spaces.append(Space(number + 65, owner, pawn))
 
     def update(self, pawn, steps, switch = False):
@@ -46,3 +46,4 @@ class Board:
             else:
                 player_spaces.append(4)
         return player_spaces
+        

@@ -3,7 +3,7 @@ set -euo pipefail
 
 # ── Configuration ────────────────────────────────────────────────────────────
 PI_USER="szh-keezen"
-PI_HOST="10.63.206.251"
+PI_HOST="10.100.83.251"
 PI_SSH_KEY="$HOME/.ssh/id_rsa"
 APP_NAME="szh-keezen"
 APP_DIR="/home/szh-keezen/$APP_NAME"

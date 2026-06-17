@@ -129,7 +129,6 @@ def bereken_route(board, pawn, steps):
                 
         space = board.spaces[huidige_pos]
         bezetter = getattr(space, 'occupied_by', None)
-        
         if bezetter is not None:
             if space.owner is not None and int(bezetter.owner) == space.owner.id:
                 return False, None
@@ -140,7 +139,7 @@ def bereken_route(board, pawn, steps):
             else:
                 if is_endzone:
                     return False, None
-
+        
     return True, huidige_pos
 
 def getSteps(card):
