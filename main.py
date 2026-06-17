@@ -38,7 +38,6 @@ async def main():
     
 # Start de statische UI-server zodat index.html vanuit Python bereikbaar is
     start_static_http_server(port=8000, directory="interface") 
-    webbrowser.open("http://localhost:8000")
 
     websocket_task = asyncio.create_task(start_websocket_server(comm_manager))
 
