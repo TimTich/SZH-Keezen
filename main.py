@@ -29,10 +29,12 @@ async def main():
     comm_manager = CommunicationManager(event_queue=event_queue)
     
     if sys.platform.startswith("win"):
-        comm_manager.register_usb_serial("COM3", baudrate=9600)
-        comm_manager.listen_usb_serial("COM3")
+        port = "COM3"
     else:
-        print("USB serial wordt overgeslagen op dit systeem; alleen Windows gebruikt COM3.")
+        port = "/dev/ttyACM0"
+
+    comm_manager.register_usb_serial(port, baudrate=9600)
+    comm_manager.listen_usb_serial(port)
     
 # Start de statische UI-server zodat index.html vanuit Python bereikbaar is
     start_static_http_server(port=8000, directory="interface") 
