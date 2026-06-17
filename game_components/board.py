@@ -13,7 +13,8 @@ class Board:
             # FIX: Aangepast van 17 naar 16
             if number % 16 == 0:
                 expected_id = number // 16
-                owner = player_dict.get(expected_id, None)
+                index = 0 if expected_id == 0 else 2 if expected_id == 1 else 1 if expected_id == 2 else 3
+                owner = player_dict.get(index, None)
                 self.spaces.append(Space(number + 1, owner))
             else:
                 self.spaces.append(Space(number + 1))
