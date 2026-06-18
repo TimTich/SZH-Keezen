@@ -126,6 +126,9 @@ class GameManager:
         elif t == "DISCARD_CARD":
             self.discardCard(event.get("player_id"), event.get("card"))
 
+        elif t == "ONTVANGEN":
+            print(f"Ontvangen bericht naar arduino")
+
     def check_win(self, player):
         for pawn in player.pawns:
             if not (64 <= pawn.position <= 79):
@@ -205,12 +208,12 @@ class GameManager:
     async def broadcast_current_player(self):
         if not self.players: return
         message = {"type": "CURRENT_PLAYER", "player_id": self.players[self.current_player_index].id}
-        await self.comm._broadcast_websocket(message)
+        self._create_async_task(self.comm._broadcast(message))
 
     def broadcast_board(self):
         if self.board:
             message = {"type": "BOARD_STATE", "spaces": self.board.getPlayerSpaces()}
-            self._create_async_task(self.comm._broadcast_websocket(message))
+            self._create_async_task(self.comm._broadcast(message))
 
     def format_pawn_label(self, pawn):
         if pawn.position >= 80: return "B"
@@ -295,7 +298,7 @@ class GameManager:
             
         self.deck.dealCards(5)
 
-        self._create_async_task(self.comm._broadcast_websocket({"type": "GAME_START", "status": "GAME_STARTED"}))
+        self._create_async_task(self.comm._broadcast({"type": "GAME_START", "status": "GAME_STARTED"}))
         self._create_async_task(self.broadcast_current_player())
         self.broadcast_hands()
         self.broadcast_game_state()
@@ -379,7 +382,7 @@ class GameManager:
         if self.check_win(player):
             self.board.spaces[pawn.position].occupied_by = pawn
             self.broadcast_game_state()
-            self._create_async_task(self.comm._broadcast_websocket({"type": "GAME_WON", "player_id": player.id}))
+            self._create_async_task(self.comm._broadcast({"type": "GAME_WON", "player_id": player.id}))
             return
 
         self.endTurn()
@@ -415,3 +418,5 @@ class GameManager:
         self._create_async_task(self.broadcast_current_player())
         self.broadcast_game_state()
         self.broadcast_board()
+
+    

@@ -236,6 +236,10 @@ class CommunicationManager:
             "active_listeners": list(self.usb_listener_threads.keys())
         }
     
+    async def _broadcast(self, message):
+        self._broadcast_usb_serial(message)
+        await self._broadcast_websocket(message)
+    
     def cleanup(self):
         """Clean up all connections and threads"""
         self.stop_usb_listeners()
