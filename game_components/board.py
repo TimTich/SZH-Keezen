@@ -15,10 +15,10 @@ class Board:
                 expected_id = number // 16
                 index = 3 if expected_id == 0 else 1 if expected_id == 1 else 0 if expected_id == 2 else 2
                 owner = player_dict.get(index, None)
-                if (number == 0):
-                    number = 64
                 self.spaces.append(Space(number, owner))
             else:
+                if (number == 0):
+                    number = 64
                 self.spaces.append(Space(number))
                 
         for number in range(32):
