@@ -220,7 +220,7 @@ class GameManager:
         if 64 <= pawn.position <= 79:
             stap = (pawn.position % 4) + 1
             return f"E{stap}"
-        return str(pawn.position + 1)
+        return str((pawn.position + 2) % 64) if (pawn.position + 2) % 64 != 0 else "64"
 
     def get_all_pawns_status(self):
         status = {}

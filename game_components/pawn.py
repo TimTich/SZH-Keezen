@@ -7,7 +7,7 @@ class Pawn:
         self.basePosition = 80 + (multiplier * 4) + id
         self.position = self.basePosition
         self.inPlay = False
-        self.startSpace = (multiplierEnd * 16) - 1
+        self.startSpace = ((multiplier * 16) - 1) % 64
         self.endZoneStart = 64 + (multiplierEnd * 4)
         self.entry_card_face = None
 
