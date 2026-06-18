@@ -317,6 +317,7 @@ class GameManager:
         if player is None or pawn_id is None or pawn_id < 0 or pawn_id >= len(player.pawns): return
 
         pawn = player.pawns[pawn_id]
+        print (f"Speler {player_id} probeert kaart {card_data['face']} te spelen met pion {pawn_id}")
         pawn2 = None
         card = Card(card_data["face"])
         

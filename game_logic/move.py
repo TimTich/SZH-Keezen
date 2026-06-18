@@ -24,9 +24,12 @@ def enterPlay(board, pawn, card_face=None):
             bezetter.inPlay = False
             bezetter.clear_entry_card()
     
-    if 0 <= pawn.position < len(board.spaces):
+    print (pawn.position)
+    if pawn.position >= 80:
         board.spaces[pawn.position].occupied_by = None
+    print (board.spaces[pawn.position].occupied_by)
         
+    
     pawn.position = dest_index
     dest_space.occupied_by = pawn
     pawn.inPlay = True

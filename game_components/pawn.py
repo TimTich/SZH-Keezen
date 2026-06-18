@@ -3,8 +3,8 @@ class Pawn:
         self.owner = owner
         self.id = id
         multiplierEnd = 0 if owner == 0 else 2 if owner == 1 else 1 if owner == 2 else 3
-        multiplier = 1 if owner == 0 else 3 if owner == 1 else 2 if owner == 2 else 0
-        self.basePosition = 80 + (multiplier * 4) + id
+        #multiplier = 1 if owner == 0 else 3 if owner == 1 else 2 if owner == 2 else 0
+        self.basePosition = 80 + (multiplierEnd * 4) + id
         self.position = self.basePosition
         self.inPlay = False
         self.startSpace = ((multiplierEnd * 16) - 1) % 64
