@@ -82,6 +82,7 @@ def voer_zet_uit(board, pawn, doel_index):
     currentPawn = target_space.occupied_by
     
     if currentPawn:
+        board.spaces[currentPawn.basePosition].occupied_by = currentPawn
         currentPawn.position = currentPawn.basePosition
         currentPawn.inPlay = False
         currentPawn.clear_entry_card()

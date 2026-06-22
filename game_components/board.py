@@ -11,9 +11,9 @@ class Board:
 
         for number in range(64):
             # FIX: Aangepast van 17 naar 16
-            if number % 16 == 0:
+            if (number + 1) % 16 == 0:
                 expected_id = number // 16
-                index = 3 if expected_id == 0 else 1 if expected_id == 1 else 0 if expected_id == 2 else 2
+                index = 2 if expected_id == 0 else 1 if expected_id == 1 else 3 if expected_id == 2 else 0
                 owner = player_dict.get(index, None)
                 self.spaces.append(Space(number, owner))
             else:
